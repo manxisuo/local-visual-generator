@@ -47,6 +47,22 @@
         </div>
       </fieldset>
 
+      <fieldset>
+        <legend>Size</legend>
+        <div class="option-row" id="size-options">
+          <button type="button" class="option" data-size="128x128">128×128</button>
+          <button type="button" class="option" data-size="192x192">192×192</button>
+          <button type="button" class="option selected" data-size="256x256">256×256</button>
+          <button type="button" class="option" data-size="384x384">384×384</button>
+          <button type="button" class="option" data-size="512x512">512×512</button>
+          <button type="button" class="option" data-size="384x256">384×256</button>
+          <button type="button" class="option" data-size="256x384">256×384</button>
+          <button type="button" class="option" data-size="512x384">512×384</button>
+          <button type="button" class="option" data-size="384x512">384×512</button>
+        </div>
+        <p id="size-hint" class="hint">Preset default: 256×256</p>
+      </fieldset>
+
       <div class="steps-row">
         <label for="steps">Steps</label>
         <input id="steps" type="number" min="1" max="500" step="1" value="4" />
@@ -63,9 +79,8 @@
       <p id="error" class="error" hidden></p>
     </section>
 
-    <section class="result">
-      <div id="placeholder" class="placeholder">Generated image will appear here</div>
-      <img id="result-image" alt="Generated result" hidden />
+    <section class="result" id="result" hidden>
+      <img id="result-image" alt="Generated image" hidden />
       <div id="meta" class="meta" hidden></div>
       <div id="actions" class="actions" hidden>
         <a id="open-image" href="#" target="_blank" rel="noopener">Open</a>

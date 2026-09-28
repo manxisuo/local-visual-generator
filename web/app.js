@@ -2,12 +2,13 @@
   const promptEl = document.getElementById("prompt");
   const stepsEl = document.getElementById("steps");
   const stepsHintEl = document.getElementById("steps-hint");
+  const sizeHintEl = document.getElementById("size-hint");
   const seedEl = document.getElementById("seed");
   const generateBtn = document.getElementById("generate");
   const randomBtn = document.getElementById("random-seed");
   const statusEl = document.getElementById("status");
   const errorEl = document.getElementById("error");
-  const placeholderEl = document.getElementById("placeholder");
+  const resultEl = document.getElementById("result");
   const imageEl = document.getElementById("result-image");
   const metaEl = document.getElementById("meta");
   const actionsEl = document.getElementById("actions");
@@ -17,12 +18,19 @@
   let selectedType = "illustration";
   let selectedPreset = "balanced";
   let selectedModel = "lcm";
+  let selectedSize = "256x256";
   let stepsMin = 1;
   let stepsMax = 500;
   let appliedDefaultSteps = 4;
+  let appliedDefaultSize = "256x256";
   const stepsByModel = {
     lcm: { instant: 2, balanced: 4, quality: 2 },
     sd15: { instant: 8, balanced: 16, quality: 20 },
+  };
+  const sizeByPreset = {
+    instant: "128x128",
+    balanced: "256x256",
+    quality: "384x384",
   };
 
   function showError(message) {
@@ -54,6 +62,20 @@
     return Number.isInteger(steps) ? steps : appliedDefaultSteps;
   }
 
+  function defaultSize() {
+    return sizeByPreset[selectedPreset] || appliedDefaultSize;
+  }
+
+  function formatSizeLabel(sizeId) {
+    return sizeId.replace("x", "×");
+  }
+
+  function parseSize(sizeId) {
+    const match = /^(\d+)x(\d+)$/.exec(sizeId || "");
+    if (!match) return null;
+    return { width: Number(match[1]), height: Number(match[2]) };
+  }
+
   function syncStepsToPreset() {
     const next = defaultSteps();
     const current = stepsEl.value.trim();
@@ -62,6 +84,16 @@
     }
     appliedDefaultSteps = next;
     stepsHintEl.textContent = `Preset default: ${next}`;
+  }
+
+  function syncSizeToPreset() {
+    const next = defaultSize();
+    if (selectedSize === appliedDefaultSize) {
+      selectedSize = next;
+      selectGroup("#size-options", "size", selectedSize);
+    }
+    appliedDefaultSize = next;
+    sizeHintEl.textContent = `Preset default: ${formatSizeLabel(next)}`;
   }
 
   function selectGroup(containerSelector, attr, value) {
@@ -90,7 +122,15 @@
     if (!btn || btn.disabled) return;
     selectedPreset = btn.dataset.preset;
     selectGroup("#preset-options", "preset", selectedPreset);
+    syncSizeToPreset();
     syncStepsToPreset();
+  });
+
+  document.getElementById("size-options").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-size]");
+    if (!btn || btn.disabled) return;
+    selectedSize = btn.dataset.size;
+    selectGroup("#size-options", "size", selectedSize);
   });
 
   randomBtn.addEventListener("click", () => {
@@ -112,6 +152,14 @@
         stepsMax = data.steps_max;
         stepsEl.min = String(stepsMin);
         stepsEl.max = String(stepsMax);
+      }
+
+      if (data.preset_sizes && typeof data.preset_sizes === "object") {
+        Object.entries(data.preset_sizes).forEach(([name, size]) => {
+          if (size && Number.isInteger(size.width) && Number.isInteger(size.height)) {
+            sizeByPreset[name] = `${size.width}x${size.height}`;
+          }
+        });
       }
 
       if (Array.isArray(data.models)) {
@@ -137,6 +185,7 @@
         selectedModel = data.model_id;
         selectGroup("#model-options", "model", selectedModel);
       }
+      syncSizeToPreset();
       syncStepsToPreset();
     } catch (err) {
       statusEl.textContent = "Unable to reach server";
@@ -174,6 +223,12 @@
       return;
     }
 
+    const size = parseSize(selectedSize);
+    if (!size) {
+      showError("Please choose a valid size.");
+      return;
+    }
+
     setBusy(true);
     try {
       const res = await fetch("/api/generate", {
@@ -184,6 +239,8 @@
           type: selectedType,
           preset: selectedPreset,
           model: selectedModel,
+          width: size.width,
+          height: size.height,
           steps,
           seed,
         }),
@@ -195,7 +252,7 @@
       }
 
       seedEl.value = String(data.seed);
-      placeholderEl.hidden = true;
+      resultEl.hidden = false;
       imageEl.hidden = false;
       imageEl.src = `${data.image}?t=${Date.now()}`;
       metaEl.hidden = false;

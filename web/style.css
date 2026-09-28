@@ -104,6 +104,10 @@ input[type="number"] {
   color: var(--accent);
 }
 
+fieldset .hint {
+  margin-top: 0.5rem;
+}
+
 .steps-row {
   margin-top: 1rem;
 }
@@ -155,11 +159,8 @@ input[type="number"] {
   font-size: 0.9rem;
 }
 
-.placeholder {
-  color: var(--muted);
-  text-align: center;
-  padding: 3rem 1rem;
-  border: 1px dashed var(--line);
+.result[hidden] {
+  display: none;
 }
 
 #result-image {
@@ -169,6 +170,10 @@ input[type="number"] {
   margin: 0 auto;
   image-rendering: auto;
   background: #eee;
+}
+
+#result-image[hidden] {
+  display: none;
 }
 
 .meta {

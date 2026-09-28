@@ -22,12 +22,14 @@ from source.presets import (
     QUALITY_PRESETS,
     SEED_MAX,
     SEED_MIN,
+    SIZE_OPTIONS,
     STEPS_MAX,
     STEPS_MIN,
     VISUAL_TYPE_TEMPLATES,
     get_model_spec,
     get_quality_preset,
     get_visual_type_suffix,
+    resolve_size,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,6 +72,13 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
                 payload = ctx.generator.status_payload()
                 payload["presets"] = list(QUALITY_PRESETS.keys())
                 payload["types"] = list(VISUAL_TYPE_TEMPLATES.keys())
+                payload["sizes"] = [
+                    {"id": f"{w}x{h}", "width": w, "height": h} for w, h in SIZE_OPTIONS
+                ]
+                payload["preset_sizes"] = {
+                    name: {"width": preset.width, "height": preset.height}
+                    for name, preset in QUALITY_PRESETS.items()
+                }
                 payload["steps_min"] = STEPS_MIN
                 payload["steps_max"] = STEPS_MAX
                 self._json_response(HTTPStatus.OK, payload)
@@ -124,6 +133,7 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
 
                 seed = _parse_seed(body.get("seed"))
                 steps = _parse_steps(body.get("steps"))
+                size = _parse_size(body.get("width"), body.get("height"))
             except ValueError as exc:
                 self._json_response(
                     HTTPStatus.BAD_REQUEST,
@@ -139,6 +149,8 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
                     seed=seed,
                     model=model_id,
                     steps=steps,
+                    width=None if size is None else size[0],
+                    height=None if size is None else size[1],
                 )
             except FileNotFoundError as exc:
                 self._json_response(
@@ -229,6 +241,37 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
             self.wfile.write(body)
 
     return Handler
+
+
+def _parse_size(width: object, height: object) -> tuple[int, int] | None:
+    """Return None to keep the quality preset's default resolution."""
+    if width is None and height is None:
+        return None
+    if width is None or height is None:
+        raise ValueError("width and height must be provided together")
+    return resolve_size(_parse_positive_int(width, "width"), _parse_positive_int(height, "height"))
+
+
+def _parse_positive_int(value: object, field: str) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"{field} must be an integer")
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValueError(f"{field} must be an integer")
+        value = int(value)
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            raise ValueError(f"{field} must be an integer")
+        try:
+            value = int(value)
+        except ValueError as exc:
+            raise ValueError(f"{field} must be an integer") from exc
+    if not isinstance(value, int):
+        raise ValueError(f"{field} must be an integer")
+    if value <= 0:
+        raise ValueError(f"{field} must be a positive integer")
+    return value
 
 
 def _parse_steps(value: object) -> int | None:

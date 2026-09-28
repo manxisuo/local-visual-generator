@@ -106,6 +106,7 @@ Configured in `presets.py` (`MODELS`):
 | `sd15` | `models/stable-diffusion-v1-5-int8-ov` | Optional, more steps, slower on CPU |
 
 Resolution presets are shared; **steps are per-model** because LCM and classic SD need different step counts.
+Quality presets still supply default size + steps; the UI/API can override size from a whitelist and steps within 1–500.
 
 Seed uses OpenVINO GenAI `rng_seed=...`. The API/UI must return the **actual seed used** so results can be reproduced.
 
@@ -121,10 +122,11 @@ Seed uses OpenVINO GenAI `rng_seed=...`. The API/UI must return the **actual see
 
 - JSON UTF-8
 - Empty prompt → 400
-- Invalid `type` / `preset` / `model` / `seed` / `steps` → 400
+- Invalid `type` / `preset` / `model` / `seed` / `steps` / `width`+`height` → 400
 - `steps` is optional (1–500). Omit it to use the model’s quality-preset default
+- `width`/`height` are optional (must be a pair from `SIZE_OPTIONS`). Omit them to use the quality-preset size
 - `/outputs/<filename>` must reject path traversal
-- UI is a single simple page: prompt, model, type, quality, steps, seed, generate, result meta
+- UI is a single simple page: prompt, model, type, quality, size, steps, seed, generate, result meta
 
 ## Change guidelines for future sessions
 

@@ -95,13 +95,19 @@ Startup loads only the default model (`lcm`). The other model is loaded on first
 
 ## Presets
 
-### Quality (resolution shared; steps depend on model)
+### Quality (default size + steps; both can be overridden)
 
-| Preset | Size | LCM steps | SD 1.5 steps |
+| Preset | Default size | LCM steps | SD 1.5 steps |
 |---|---|---|---|
 | `instant` | 128×128 | 2 | 8 |
 | `balanced` | 256×256 | 4 | 16 |
 | `quality` | 384×384 | 2 | 20 |
+
+### Size options
+
+Square: `128×128`, `192×192`, `256×256`, `384×384`, `512×512`
+
+Landscape / portrait: `384×256`, `256×384`, `512×384`, `384×512`
 
 ### Visual types
 
@@ -136,6 +142,8 @@ Request:
   "type": "illustration",
   "preset": "balanced",
   "model": "lcm",
+  "width": 256,
+  "height": 256,
   "steps": 4,
   "seed": 42
 }
@@ -144,6 +152,8 @@ Request:
 `model` is optional (default `lcm`). Use `"sd15"` for Stable Diffusion 1.5.
 
 `steps` is optional. Omit it to use the preset default for that model. When set, it must be an integer from 1 to 500. The web UI starts from the preset default and lets you change it.
+
+`width` / `height` are optional and must be provided together. Omit them to use the preset default size. When set, the pair must be one of the allowed size options above.
 
 Response:
 
@@ -178,6 +188,7 @@ web/
   app.js
 models/                         # model files (gitignored)
 outputs/                        # generated images (gitignored)
+logs/                           # generation log (gitignored)
 scripts/download_model.py
 ```
 

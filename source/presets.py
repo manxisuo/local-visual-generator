@@ -162,6 +162,20 @@ SEED_MAX = 2**31 - 1
 STEPS_MIN = 1
 STEPS_MAX = 500
 
+# Whitelisted sizes (multiples of 64 keep SD UNet happy; all are multiples of 8).
+SIZE_OPTIONS: tuple[tuple[int, int], ...] = (
+    (128, 128),
+    (192, 192),
+    (256, 256),
+    (384, 384),
+    (512, 512),
+    (384, 256),
+    (256, 384),
+    (512, 384),
+    (384, 512),
+)
+SIZE_OPTION_SET = frozenset(SIZE_OPTIONS)
+
 
 def get_model_spec(model_id: str) -> ModelSpec:
     key = model_id.strip().lower()
@@ -219,6 +233,13 @@ def get_quality_preset(name: str, model_id: str = DEFAULT_MODEL) -> QualityPrese
         steps=spec.steps_by_preset[key],
         description=base.description,
     )
+
+
+def resolve_size(width: int, height: int) -> tuple[int, int]:
+    if (width, height) not in SIZE_OPTION_SET:
+        valid = ", ".join(f"{w}×{h}" for w, h in SIZE_OPTIONS)
+        raise ValueError(f"Unsupported size '{width}x{height}'. Valid: {valid}")
+    return width, height
 
 
 def get_visual_type_suffix(visual_type: str) -> str:

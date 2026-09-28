@@ -25,6 +25,7 @@ from source.presets import (
     list_available_models,
     model_available_on_disk,
     model_dir,
+    resolve_size,
 )
 
 logger = logging.getLogger(__name__)
@@ -105,6 +106,8 @@ class ImageGenerator:
         seed: int,
         model: str | None = None,
         steps: int | None = None,
+        width: int | None = None,
+        height: int | None = None,
     ) -> GenerateResult:
         if not self._ready:
             raise RuntimeError("Generator is not ready. Call load() first.")
@@ -116,6 +119,11 @@ class ImageGenerator:
             quality = get_quality_preset(preset, model_id)
         if steps is not None:
             quality = replace(quality, steps=_validate_steps(steps))
+        if width is not None or height is not None:
+            if width is None or height is None:
+                raise ValueError("width and height must be provided together")
+            resolved_w, resolved_h = resolve_size(width, height)
+            quality = replace(quality, width=resolved_w, height=resolved_h)
         full_prompt = build_prompt(prompt, visual_type)
 
         with self._lock:
@@ -189,7 +197,16 @@ class ImageGenerator:
         out_path = self.outputs_dir / filename
         image.save(out_path, format="PNG")
 
-        logger.info("Saved %s model=%s (%.2fs)", out_path.name, model_id, elapsed)
+        elapsed_s = round(elapsed, 2)
+        self._record_generation(
+            model_id=model_id,
+            width=quality.width,
+            height=quality.height,
+            steps=quality.steps,
+            seed=seed,
+            elapsed=elapsed_s,
+            filename=filename,
+        )
 
         return GenerateResult(
             image_path=out_path,
@@ -198,10 +215,42 @@ class ImageGenerator:
             height=quality.height,
             steps=quality.steps,
             seed=seed,
-            elapsed=round(elapsed, 2),
+            elapsed=elapsed_s,
             prompt_used=full_prompt,
             model=model_id,
         )
+
+    def _record_generation(
+        self,
+        *,
+        model_id: str,
+        width: int,
+        height: int,
+        steps: int,
+        seed: int,
+        elapsed: float,
+        filename: str,
+    ) -> None:
+        now = datetime.now()
+        line = (
+            f"{now.strftime('%Y-%m-%d %H:%M:%S')} | "
+            f"model={model_id} | "
+            f"size={width}x{height} | "
+            f"steps={steps} | "
+            f"seed={seed} | "
+            f"elapsed={elapsed:.2f}s | "
+            f"file={filename}"
+        )
+        logger.info("%s", line)
+
+        log_dir = (self.project_root / "logs").resolve()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / "generations.log"
+        try:
+            with log_path.open("a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
+        except OSError:
+            logger.exception("Failed to append generation log to %s", log_path)
 
     @staticmethod
     def _tensor_to_pil(result: object, width: int, height: int) -> Image.Image:
