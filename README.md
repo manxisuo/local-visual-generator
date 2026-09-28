@@ -99,6 +99,7 @@ http://127.0.0.1:7860
 | `instant` | Fast | 128×128 | 2 |
 | `balanced` | Balanced | 256×256 | 4 |
 | `quality` | Quality | 384×384 | 2 |
+| `render` | Render | 1024×1024 | 4 |
 
 ### Size options
 

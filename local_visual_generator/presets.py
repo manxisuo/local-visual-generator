@@ -51,6 +51,13 @@ QUALITY_PRESETS: dict[str, QualityPreset] = {
         steps=2,
         description="Larger resolution, still low latency",
     ),
+    "render": QualityPreset(
+        name="render",
+        width=1024,
+        height=1024,
+        steps=4,
+        description="High-res render; much slower on CPU",
+    ),
 }
 
 DEFAULT_PRESET = "balanced"
@@ -65,6 +72,7 @@ MODELS: dict[str, ModelSpec] = {
             "instant": 2,
             "balanced": 4,
             "quality": 2,
+            "render": 4,
         },
         description="Fast LCM - default for low latency",
     ),

@@ -23,11 +23,12 @@
   let selectedSize = "256x256";
   let stepsMin = 1;
   let stepsMax = 50;
-  const stepsByPreset = { instant: 2, balanced: 4, quality: 2 };
+  const stepsByPreset = { instant: 2, balanced: 4, quality: 2, render: 4 };
   const sizeByPreset = {
     instant: "128x128",
     balanced: "256x256",
     quality: "384x384",
+    render: "1024x1024",
   };
 
   function showError(message) {
