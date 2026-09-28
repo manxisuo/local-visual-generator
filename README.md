@@ -143,7 +143,7 @@ Request:
 
 `model` is optional (default `lcm`).
 
-`steps` is optional. Omit it to use the preset default. When set, it must be an integer from 1 to 500. The web UI starts from the preset default and lets you change it.
+`steps` is optional. Omit it to use the preset default. When set, it must be an integer from 1 to 50. The web UI starts from the preset default and lets you change it.
 
 `width` / `height` are optional and must be provided together. Omit them to use the preset default size. When set, the pair must be one of the allowed size options above.
 

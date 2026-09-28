@@ -20,7 +20,7 @@
   let selectedModel = "lcm";
   let selectedSize = "256x256";
   let stepsMin = 1;
-  let stepsMax = 500;
+  let stepsMax = 50;
   let appliedDefaultSteps = 4;
   let appliedDefaultSize = "256x256";
   const stepsByPreset = { instant: 2, balanced: 4, quality: 2 };

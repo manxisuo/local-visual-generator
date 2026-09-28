@@ -103,7 +103,7 @@ Configured in `presets.py` (`MODELS`):
 |---|---|---|
 | `lcm` | `models/LCM_Dreamshaper_v7-int8-ov` | LCM Dreamshaper, few steps, low latency |
 
-Quality presets supply default size + steps; the UI/API can override size from a whitelist and steps within 1–500.
+Quality presets supply default size + steps; the UI/API can override size from a whitelist and steps within 1–50.
 
 Seed uses OpenVINO GenAI `rng_seed=...`. The API/UI must return the **actual seed used** so results can be reproduced.
 

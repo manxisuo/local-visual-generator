@@ -147,7 +147,7 @@ SEED_MAX = 2**31 - 1
 
 # Optional UI/API override. Preset defaults stay inside this range.
 STEPS_MIN = 1
-STEPS_MAX = 500
+STEPS_MAX = 50
 
 # Whitelisted sizes (multiples of 8; prefer multiples of 64 for UNet alignment).
 SIZE_OPTIONS: tuple[tuple[int, int], ...] = (
