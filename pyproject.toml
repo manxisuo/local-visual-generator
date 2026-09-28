@@ -1,0 +1,20 @@
+[project]
+name = "local-visual-generator"
+version = "0.1.0"
+description = "Lightweight local CPU-first AI image generator using OpenVINO GenAI"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "openvino",
+    "openvino-genai",
+    "openvino-tokenizers",
+    "pillow",
+    "huggingface-hub",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["source"]

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Local Visual Generator</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Local Visual Generator</h1>
+      <p class="subtitle">Local CPU image generation · OpenVINO</p>
+      <p id="status" class="status">Checking status…</p>
+    </header>
+
+    <section class="controls">
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt" rows="4" placeholder="a small house beside a lake"></textarea>
+
+      <fieldset>
+        <legend>Model</legend>
+        <div class="option-row" id="model-options">
+          <button type="button" class="option selected" data-model="lcm">LCM</button>
+          <button type="button" class="option" data-model="sd15">SD 1.5</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Type</legend>
+        <div class="option-row" id="type-options">
+          <button type="button" class="option selected" data-type="illustration">Illustration</button>
+          <button type="button" class="option" data-type="anime">Anime</button>
+          <button type="button" class="option" data-type="icon">Icon</button>
+          <button type="button" class="option" data-type="logo">Logo</button>
+          <button type="button" class="option" data-type="landscape">Landscape</button>
+          <button type="button" class="option" data-type="free">Free</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Quality</legend>
+        <div class="option-row" id="preset-options">
+          <button type="button" class="option" data-preset="instant">Instant</button>
+          <button type="button" class="option selected" data-preset="balanced">Balanced</button>
+          <button type="button" class="option" data-preset="quality">Quality</button>
+        </div>
+      </fieldset>
+
+      <div class="steps-row">
+        <label for="steps">Steps</label>
+        <input id="steps" type="number" min="1" max="500" step="1" value="4" />
+        <p id="steps-hint" class="hint">Preset default: 4</p>
+      </div>
+
+      <div class="seed-row">
+        <label for="seed">Seed</label>
+        <input id="seed" type="number" min="0" max="2147483647" value="42" />
+        <button type="button" id="random-seed" class="secondary">Random</button>
+      </div>
+
+      <button type="button" id="generate" class="primary">Generate</button>
+      <p id="error" class="error" hidden></p>
+    </section>
+
+    <section class="result">
+      <div id="placeholder" class="placeholder">Generated image will appear here</div>
+      <img id="result-image" alt="Generated result" hidden />
+      <div id="meta" class="meta" hidden></div>
+      <div id="actions" class="actions" hidden>
+        <a id="open-image" href="#" target="_blank" rel="noopener">Open</a>
+        <a id="download-image" href="#" download>Save</a>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
