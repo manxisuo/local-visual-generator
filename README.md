@@ -1,16 +1,22 @@
 # Local Visual Generator
 
-Lightweight, fully local AI image generator for low-power PCs.
+A CPU-first local visual generator optimized for fast, low-detail images.
 
-It targets fast, low-detail visuals (flat illustration, simple anime, icon/logo concepts, landscapes) using OpenVINO GenAI on **CPU**. It does not aim for high-fidelity photorealism.
+**Stack:** LCM (Dreamshaper v7 INT8) · OpenVINO GenAI · CPU-first
+
+Fully offline after the model is downloaded. Built for flat illustration, simple anime, icon/logo concepts, and landscapes — not high-fidelity photorealism.
 
 For architecture, constraints, and the validated tech route, see [DESIGN.md](DESIGN.md).
 
-## Why CPU-first
+## Why LCM + OpenVINO + CPU-first
 
-On the test machine (Intel Iris Xe + OpenVINO GenAI `Text2ImagePipeline`), GPU model compile was extremely slow (tens of minutes, incomplete). The CPU path loads and generates normally.
+| Choice | Why |
+|---|---|
+| **LCM** | Few-step diffusion → seconds-to-image on modest hardware |
+| **OpenVINO GenAI** | Official INT8 pipeline (`Text2ImagePipeline`), small local runtime |
+| **CPU-first** | Default and supported path; no GPU required |
 
-This is based on measured results on that hardware. It does not mean all Intel GPUs behave the same.
+On the test machine (Intel Iris Xe), GPU model compile was extremely slow (tens of minutes, incomplete). The CPU path loads and generates normally. That is a measured result on that hardware, not a claim about all Intel GPUs.
 
 ## Test hardware
 
@@ -186,7 +192,7 @@ scripts/download_model.py
 
 ## Current limitations
 
-- CPU only (GPU compile path not used)
+- LCM + OpenVINO + CPU-first only (no alternate model family; GPU not the supported path)
 - One generation at a time (global lock)
 - Low-detail LCM INT8 output — not a high-quality art pipeline
 - No auth, no database, no plugin system

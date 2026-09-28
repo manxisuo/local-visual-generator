@@ -3,17 +3,31 @@
 Durable design context for Local Visual Generator.
 Read this before changing architecture, dependencies, or inference behavior.
 
+## Positioning
+
+> A CPU-first local visual generator optimized for fast, low-detail images.
+
+**Formal stack (do not treat as interchangeable):**
+
+| Pillar | Choice |
+|---|---|
+| Model | **LCM** — `OpenVINO/LCM_Dreamshaper_v7-int8-ov` (`lcm`) |
+| Inference | **OpenVINO** + OpenVINO GenAI `Text2ImagePipeline` |
+| Device | **CPU-first** — CPU is the default and supported path |
+
+This product is defined by that trio. Changing model family, inference backend, or default device is an architectural decision, not a casual tweak.
+
 ## Product goal
 
-This is a **local, low-latency, low-detail** image concept tool — not a high-quality art studio.
+Local, low-latency, low-detail image concepts — not a high-quality art studio.
 
 Optimize for:
 
-- Fully offline after models are downloaded
+- Fully offline after the LCM model is downloaded
 - CPU-first inference on modest PCs
-- Short time-to-image (seconds, not minutes)
+- Short time-to-image via LCM few-step diffusion (seconds, not minutes)
 - Flat / minimalist / large color-block visuals
-- Small dependency surface
+- Small dependency surface (OpenVINO GenAI + Pillow + stdlib HTTP)
 - Simple HTTP API usable by other local programs
 
 Do **not** optimize for:
@@ -34,8 +48,9 @@ Already validated on the target machine. Prefer extending this path over replaci
 | Layer | Choice |
 |---|---|
 | Runtime | Python 3.11 (`requires-python = ">=3.11,<3.12"`), managed with `uv` |
+| Model | LCM Dreamshaper v7 INT8 (`lcm`) only |
 | Inference | OpenVINO + OpenVINO GenAI `Text2ImagePipeline` |
-| Device | **CPU only** by default |
+| Device | **CPU-first** (CPU default; GPU not the supported path) |
 | Imaging | Pillow |
 | HTTP | stdlib `http.server.ThreadingHTTPServer` + `BaseHTTPRequestHandler` |
 | UI | Static HTML / CSS / Vanilla JS served by the same process |
@@ -50,11 +65,13 @@ Already validated on the target machine. Prefer extending this path over replaci
 - Auto-download of multi-GB models on `app.py` startup
 - Complex plugin frameworks or heavy abstraction layers
 
-## Why CPU-first
+## Why LCM + OpenVINO + CPU-first
 
-On the test hardware (Intel Iris Xe + OpenVINO GenAI diffusion pipeline), **GPU model compile was abnormally slow** (tens of minutes, incomplete in practice). CPU load and generate work normally.
+- **LCM:** few inference steps → acceptable latency for low-detail concepts on CPU
+- **OpenVINO GenAI:** ready INT8 OV model + `Text2ImagePipeline`; avoids a PyTorch/CUDA stack
+- **CPU-first:** on the test hardware (Intel Iris Xe), **GPU model compile was abnormally slow** (tens of minutes, incomplete in practice). CPU load and generate work normally
 
-This is a measured result on that machine, not a claim about all Intel GPUs. Do not switch the default device to GPU unless compile + generate are re-validated end-to-end.
+That GPU result is measured on that machine, not a claim about all Intel GPUs. Do not switch the default device to GPU unless compile + generate are re-validated end-to-end. Do not add alternate model families (e.g. SD 1.5) without an explicit product decision.
 
 ## Architecture
 
@@ -135,4 +152,4 @@ Before adding a feature, ask:
 
 Good follow-ups (when needed): negative prompt, guidance scale exposure, output history list, CLI client.
 
-Avoid unless explicitly requested: GPU default flip, cloud backends, auth, DB, frontend frameworks, ComfyUI integration, large refactors for abstraction.
+Avoid unless explicitly requested: non-LCM model families, GPU default flip, cloud backends, auth, DB, frontend frameworks, ComfyUI / PyTorch stacks, large refactors for abstraction.
