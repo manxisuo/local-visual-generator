@@ -358,7 +358,7 @@ def _parse_seed(value: object) -> int:
     return value
 
 
-def run_server(ctx: AppContext, host: str = "127.0.0.1", port: int = 7860) -> None:
+def run_server(ctx: AppContext, host: str = "0.0.0.0", port: int = 7860) -> None:
     handler = create_handler(ctx)
     server = ThreadingHTTPServer((host, port), handler)
     logger.info("Serving on http://%s:%d", host, port)

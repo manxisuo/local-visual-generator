@@ -78,11 +78,19 @@ models/LCM_Dreamshaper_v7-int8-ov
 uv run python app.py
 ```
 
-Open:
+Open on this machine:
 
 ```text
 http://127.0.0.1:7860
 ```
+
+Or from another device on the same network, use this PC's LAN IP, for example:
+
+```text
+http://192.168.x.x:7860
+```
+
+The server listens on `0.0.0.0:7860` (all interfaces). Windows Firewall may ask to allow Python the first time.
 
 ## Model
 

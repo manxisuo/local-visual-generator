@@ -31,7 +31,7 @@ def main() -> int:
         return 1
 
     ctx = AppContext(project_root=project_root, generator=generator)
-    run_server(ctx, host="127.0.0.1", port=7860)
+    run_server(ctx, host="0.0.0.0", port=7860)
     return 0
 
 
