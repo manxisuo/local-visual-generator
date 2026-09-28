@@ -3,9 +3,8 @@
 ```
 refactor(models): remove SD 1.5 and keep LCM only
 
-Drop sd15 from presets, web UI, and docs
-Simplify model lifecycle to a single LCM pipeline
-Add 768/1024 size options for high-res testing
+- Drop sd15 from presets, web UI, and docs
+- Simplify model lifecycle to a single LCM pipeline
 ```
 
 
