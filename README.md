@@ -123,6 +123,18 @@ Landscape emphasizes spatial layers. Logo/icon modes are **concept** generators,
 
 Prefer a single simple noun or emblem idea; Logo will not reliably turn busy scenes into brand marks.
 
+### Prompt tips
+
+Prefer short, concrete prompts:
+
+```text
+a rocket
+a black crow
+a small house beside a lake
+```
+
+Avoid unnecessary punctuation, list markers, or overly long descriptions when using low-step LCM presets.
+
 ## API
 
 ### `GET /api/status`
