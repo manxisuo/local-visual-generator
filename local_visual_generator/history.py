@@ -34,6 +34,36 @@ def resolve_output_file(outputs_dir: Path, name: str) -> Path | None:
     return file_path
 
 
+def delete_output_image(outputs_dir: Path, name: str) -> dict[str, Any]:
+    """Delete a gallery image and its sidecar JSON under outputs/.
+
+    Only accepts a safe image basename (e.g. ``foo.png``). Sidecar paths are
+    derived from that name — clients cannot pass arbitrary JSON paths.
+    """
+    image_path = resolve_output_file(outputs_dir, name)
+    if image_path is None:
+        raise ValueError("Invalid filename")
+    if image_path.suffix.lower() not in IMAGE_SUFFIXES:
+        raise ValueError("Only image files can be deleted")
+
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Image not found: {name}")
+
+    deleted: list[str] = []
+    image_path.unlink()
+    deleted.append(image_path.name)
+
+    for extra in (image_path.with_suffix(".json"), image_path.with_suffix(".json.tmp")):
+        try:
+            if extra.is_file():
+                extra.unlink()
+                deleted.append(extra.name)
+        except OSError:
+            logger.exception("Failed to delete sidecar %s", extra.name)
+
+    logger.info("Deleted gallery output: %s", ", ".join(deleted))
+    return {"id": name, "deleted": deleted}
+
 def write_sidecar_metadata(image_path: Path, metadata: dict[str, Any]) -> None:
     """Write JSON next to a successfully saved PNG (temp file + replace)."""
     json_path = image_path.with_suffix(".json")

@@ -28,6 +28,7 @@
   const detailImage = document.getElementById("detail-image");
   const detailFields = document.getElementById("detail-fields");
   const detailReuseBtn = document.getElementById("detail-reuse");
+  const detailDeleteBtn = document.getElementById("detail-delete");
   const detailOpen = document.getElementById("detail-open");
   const detailCopyInput = document.getElementById("detail-copy-input");
   const detailCopyFinal = document.getElementById("detail-copy-final");
@@ -519,12 +520,40 @@
     showReuseNotice(notice);
   }
 
+  async function deleteGalleryItem(item) {
+    if (!item || !item.id) return;
+    const confirmed = window.confirm(
+      `Delete this image and its metadata?\n\n${item.id}`,
+    );
+    if (!confirmed) return;
+
+    detailDeleteBtn.disabled = true;
+    try {
+      const res = await fetch("/api/gallery/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ id: item.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Delete failed (${res.status})`);
+      }
+      closeDetail();
+      await loadGallery({ reset: true });
+    } catch (err) {
+      window.alert(err.message || String(err));
+    } finally {
+      detailDeleteBtn.disabled = false;
+    }
+  }
+
   galleryMoreBtn.addEventListener("click", () => {
     loadGallery({ reset: false });
   });
 
   detailClose.addEventListener("click", closeDetail);
   detailReuseBtn.addEventListener("click", () => reuseParameters(activeDetailItem));
+  detailDeleteBtn.addEventListener("click", () => deleteGalleryItem(activeDetailItem));
   detailCopyInput.addEventListener("click", () => {
     if (activeDetailItem) copyText(activeDetailItem.input_prompt);
   });

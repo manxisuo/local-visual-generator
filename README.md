@@ -205,6 +205,16 @@ Each item includes `id`, `image` URL, `created_at`, prompt/style/mode fields whe
 
 New generations also write a same-name `.json` sidecar next to the PNG (`schema_version: 1`) with `input_prompt`, `final_prompt`, `type`, `preset`, `seed`, size, model, device, and elapsed time.
 
+### `POST /api/gallery/delete`
+
+Deletes one image under `outputs/` and its sidecar JSON (if present).
+
+```json
+{ "id": "lcm_20260929-011457_4steps_6c8f2269.png" }
+```
+
+`id` must be a safe basename ending in an allowed image extension. Path traversal is rejected. Response includes `deleted` filenames.
+
 ### `GET /outputs/<filename>`
 
 Serves a generated PNG. Path traversal is rejected.

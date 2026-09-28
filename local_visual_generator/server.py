@@ -13,7 +13,7 @@ from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
 from local_visual_generator.generator import ImageGenerator
-from local_visual_generator.history import list_gallery, resolve_output_file
+from local_visual_generator.history import delete_output_image, list_gallery, resolve_output_file
 from local_visual_generator.presets import (
     DEFAULT_MODEL,
     DEFAULT_PRESET,
@@ -97,6 +97,9 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
             if path == "/api/generate":
                 self._handle_generate()
                 return
+            if path == "/api/gallery/delete":
+                self._handle_gallery_delete()
+                return
 
             self._json_response(HTTPStatus.NOT_FOUND, {"error": "Not found"})
 
@@ -117,6 +120,45 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
                 )
                 return
             self._json_response(HTTPStatus.OK, payload)
+
+        def _handle_gallery_delete(self) -> None:
+            try:
+                body = self._read_json_body()
+            except ValueError as exc:
+                self._json_response(HTTPStatus.BAD_REQUEST, {"success": False, "error": str(exc)})
+                return
+
+            image_id = body.get("id")
+            if not isinstance(image_id, str) or not image_id.strip():
+                self._json_response(
+                    HTTPStatus.BAD_REQUEST,
+                    {"success": False, "error": "id is required and must be a filename"},
+                )
+                return
+
+            try:
+                result = delete_output_image(ctx.outputs_dir, image_id.strip())
+            except ValueError as exc:
+                self._json_response(
+                    HTTPStatus.BAD_REQUEST,
+                    {"success": False, "error": str(exc)},
+                )
+                return
+            except FileNotFoundError as exc:
+                self._json_response(
+                    HTTPStatus.NOT_FOUND,
+                    {"success": False, "error": str(exc)},
+                )
+                return
+            except OSError as exc:
+                logger.exception("Failed to delete gallery image %s", image_id)
+                self._json_response(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    {"success": False, "error": f"Failed to delete: {exc}"},
+                )
+                return
+
+            self._json_response(HTTPStatus.OK, {"success": True, **result})
 
         def _handle_generate(self) -> None:
             try:

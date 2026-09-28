@@ -417,3 +417,18 @@ fieldset.is-disabled .option {
   color: var(--accent);
   font-size: 0.9rem;
 }
+
+.gallery-detail-actions .danger {
+  border-color: var(--danger);
+  background: #fff;
+  color: var(--danger);
+}
+
+.gallery-detail-actions .danger:hover:not(:disabled) {
+  background: #f7e9e9;
+}
+
+.gallery-detail-actions .danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
