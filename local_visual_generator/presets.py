@@ -92,8 +92,8 @@ VISUAL_TYPE_TEMPLATES: dict[str, str] = {
         "simple background"
     ),
     "anime": (
-        "clean anime illustration, "
-        "single clear character, "
+        "clean anime-style illustration, "
+        "clear focal subject, "
         "clean line art, "
         "large flat color areas, "
         "simple cel shading, "
@@ -110,13 +110,14 @@ VISUAL_TYPE_TEMPLATES: dict[str, str] = {
         "readable at small size"
     ),
     "logo": (
-        "minimal brand mark, "
-        "single abstract symbol, "
-        "simple geometric construction, "
-        "balanced proportions, "
+        "minimal logo concept, "
+        "single simplified symbol, "
+        "clean geometric shape, "
+        "balanced composition, "
         "strong negative space, "
         "2 to 3 solid colors, "
-        "plain white background"
+        "plain white background, "
+        "memorable and recognizable"
     ),
     "landscape": (
         "minimalist landscape illustration, "
