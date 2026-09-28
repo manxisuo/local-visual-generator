@@ -23,10 +23,7 @@
   let stepsMax = 500;
   let appliedDefaultSteps = 4;
   let appliedDefaultSize = "256x256";
-  const stepsByModel = {
-    lcm: { instant: 2, balanced: 4, quality: 2 },
-    sd15: { instant: 8, balanced: 16, quality: 20 },
-  };
+  const stepsByPreset = { instant: 2, balanced: 4, quality: 2 };
   const sizeByPreset = {
     instant: "128x128",
     balanced: "256x256",
@@ -45,20 +42,13 @@
     stepsEl.disabled = busy;
     seedEl.disabled = busy;
     document.querySelectorAll(".option").forEach((btn) => {
-      if (busy) {
-        btn.disabled = true;
-      } else if (btn.dataset.model) {
-        btn.disabled = btn.dataset.unavailable === "1";
-      } else {
-        btn.disabled = false;
-      }
+      btn.disabled = busy;
     });
     generateBtn.textContent = busy ? "Generating…" : "Generate";
   }
 
   function defaultSteps() {
-    const table = stepsByModel[selectedModel] || {};
-    const steps = table[selectedPreset];
+    const steps = stepsByPreset[selectedPreset];
     return Number.isInteger(steps) ? steps : appliedDefaultSteps;
   }
 
@@ -101,14 +91,6 @@
       btn.classList.toggle("selected", btn.dataset[attr] === value);
     });
   }
-
-  document.getElementById("model-options").addEventListener("click", (event) => {
-    const btn = event.target.closest("[data-model]");
-    if (!btn || btn.disabled) return;
-    selectedModel = btn.dataset.model;
-    selectGroup("#model-options", "model", selectedModel);
-    syncStepsToPreset();
-  });
 
   document.getElementById("type-options").addEventListener("click", (event) => {
     const btn = event.target.closest("[data-type]");
@@ -164,26 +146,14 @@
 
       if (Array.isArray(data.models)) {
         data.models.forEach((model) => {
-          if (model.steps && typeof model.steps === "object") {
-            stepsByModel[model.id] = model.steps;
-          }
-          const btn = document.querySelector(`[data-model="${model.id}"]`);
-          if (!btn) return;
-          if (!model.available) {
-            btn.dataset.unavailable = "1";
-            btn.disabled = true;
-            btn.title = "Model not found on disk";
-          } else {
-            btn.dataset.unavailable = "0";
-            btn.disabled = false;
-            btn.title = model.description || model.name || "";
+          if (model.id === selectedModel && model.steps && typeof model.steps === "object") {
+            Object.assign(stepsByPreset, model.steps);
           }
         });
       }
 
       if (data.model_id) {
         selectedModel = data.model_id;
-        selectGroup("#model-options", "model", selectedModel);
       }
       syncSizeToPreset();
       syncStepsToPreset();

@@ -85,10 +85,9 @@ Keep the structure **small and clear**. Avoid stuffing everything into one giant
 
 ## Model lifecycle
 
-1. Startup loads **only the default model** (`lcm`).
-2. Pipelines are **cached in process memory** after first load.
-3. Switching to another installed model (e.g. `sd15`) loads it on first use, then reuses the cached pipeline.
-4. **Never** construct a new `Text2ImagePipeline` for every HTTP request.
+1. Startup loads the LCM model (`lcm`).
+2. The pipeline is **cached in process memory** after first load.
+3. **Never** construct a new `Text2ImagePipeline` for every HTTP request.
 
 Generation is always under one `threading.Lock`:
 
@@ -96,17 +95,15 @@ Generation is always under one `threading.Lock`:
 - Parallel jobs mostly fight for CPU/RAM and increase latency
 - `ThreadingHTTPServer` may accept concurrent connections, but `generate()` must stay serial
 
-## Models
+## Model
 
 Configured in `presets.py` (`MODELS`):
 
 | Id | Directory | Role |
 |---|---|---|
-| `lcm` | `models/LCM_Dreamshaper_v7-int8-ov` | Default, few steps, low latency |
-| `sd15` | `models/stable-diffusion-v1-5-int8-ov` | Optional, more steps, slower on CPU |
+| `lcm` | `models/LCM_Dreamshaper_v7-int8-ov` | LCM Dreamshaper, few steps, low latency |
 
-Resolution presets are shared; **steps are per-model** because LCM and classic SD need different step counts.
-Quality presets still supply default size + steps; the UI/API can override size from a whitelist and steps within 1–500.
+Quality presets supply default size + steps; the UI/API can override size from a whitelist and steps within 1–500.
 
 Seed uses OpenVINO GenAI `rng_seed=...`. The API/UI must return the **actual seed used** so results can be reproduced.
 
@@ -126,7 +123,7 @@ Seed uses OpenVINO GenAI `rng_seed=...`. The API/UI must return the **actual see
 - `steps` is optional (1–500). Omit it to use the model’s quality-preset default
 - `width`/`height` are optional (must be a pair from `SIZE_OPTIONS`). Omit them to use the quality-preset size
 - `/outputs/<filename>` must reject path traversal
-- UI is a single simple page: prompt, model, type, quality, size, steps, seed, generate, result meta
+- UI is a single simple page: prompt, type, quality, size, steps, seed, generate, result meta
 
 ## Change guidelines for future sessions
 
@@ -136,6 +133,6 @@ Before adding a feature, ask:
 2. Can it be done without new major dependencies?
 3. Does it preserve one-load / serial-generate semantics?
 
-Good follow-ups (when needed): negative prompt, guidance scale exposure, output history list, CLI client, optional unload of unused cached models to save RAM.
+Good follow-ups (when needed): negative prompt, guidance scale exposure, output history list, CLI client.
 
 Avoid unless explicitly requested: GPU default flip, cloud backends, auth, DB, frontend frameworks, ComfyUI integration, large refactors for abstraction.

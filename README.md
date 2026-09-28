@@ -21,8 +21,7 @@ This is based on measured results on that hardware. It does not mean all Intel G
 - Python 3.11
 - OpenVINO + OpenVINO GenAI
 - Models:
-  - `OpenVINO/LCM_Dreamshaper_v7-int8-ov` (default, fast)
-  - `OpenVINO/stable-diffusion-v1-5-int8-ov` (optional, slower / more steps)
+  - `OpenVINO/LCM_Dreamshaper_v7-int8-ov`
 
 ## Measured benchmarks (CPU, LCM)
 
@@ -36,14 +35,12 @@ This is based on measured results on that hardware. It does not mean all Intel G
 
 Model load: ~7.2 s
 
-SD 1.5 uses more steps at the same resolutions and is noticeably slower on CPU.
-
 ## Requirements
 
 - Python 3.11 (managed by `uv` via `requires-python`)
 - [uv](https://github.com/astral-sh/uv)
-- ~2GB+ disk per model
-- Enough RAM for the INT8 diffusion pipeline (both models can stay cached after first use)
+- ~2GB+ disk for the model
+- Enough RAM for the INT8 diffusion pipeline
 
 ## Install
 
@@ -53,23 +50,20 @@ uv sync
 
 ## Download model
 
-Do this once per model. The app will **not** auto-download on startup.
+Do this once. The app will **not** auto-download on startup.
 
 ```bash
-uv run python scripts/download_model.py --model lcm
-uv run python scripts/download_model.py --model sd15
-# or: uv run python scripts/download_model.py --model all
+uv run python scripts/download_model.py
 ```
 
 If the target folder already looks complete, the script skips.
 It only writes into that subdirectory and does not touch sibling folders under `models/`.
-Use `--force` only to re-download the selected model.
+Use `--force` only to re-download.
 
-Model paths:
+Model path:
 
 ```text
 models/LCM_Dreamshaper_v7-int8-ov
-models/stable-diffusion-v1-5-int8-ov
 ```
 
 ## Start
@@ -84,30 +78,29 @@ Open:
 http://127.0.0.1:7860
 ```
 
-## Models
+## Model
 
 | Id | Folder | Notes |
 |---|---|---|
-| `lcm` | `LCM_Dreamshaper_v7-int8-ov` | Default · few steps · low latency |
-| `sd15` | `stable-diffusion-v1-5-int8-ov` | Classic SD · more steps · slower on CPU |
-
-Startup loads only the default model (`lcm`). The other model is loaded on first use and then cached in memory. Generation remains serial.
+| `lcm` | `LCM_Dreamshaper_v7-int8-ov` | LCM Dreamshaper · few steps · low latency |
 
 ## Presets
 
 ### Quality (default size + steps; both can be overridden)
 
-| Preset | Default size | LCM steps | SD 1.5 steps |
-|---|---|---|---|
-| `instant` | 128×128 | 2 | 8 |
-| `balanced` | 256×256 | 4 | 16 |
-| `quality` | 384×384 | 2 | 20 |
+| Preset | Default size | Steps |
+|---|---|---|
+| `instant` | 128×128 | 2 |
+| `balanced` | 256×256 | 4 |
+| `quality` | 384×384 | 2 |
 
 ### Size options
 
-Square: `128×128`, `192×192`, `256×256`, `384×384`, `512×512`
+Square: `128×128`, `192×192`, `256×256`, `384×384`, `512×512`, `768×768`, `1024×1024`
 
-Landscape / portrait: `384×256`, `256×384`, `512×384`, `384×512`
+Landscape / portrait: `384×256`, `256×384`, `512×384`, `384×512`, `1024×768`, `768×1024`
+
+Larger sizes (especially 768+) are much slower on CPU; use them for testing.
 
 ### Visual types
 
@@ -126,8 +119,7 @@ Types (except `free`) append a prompt template that favors large color blocks, f
   "model_id": "lcm",
   "device": "CPU",
   "models": [
-    {"id": "lcm", "available": true, "loaded": true},
-    {"id": "sd15", "available": true, "loaded": false}
+    {"id": "lcm", "available": true, "loaded": true}
   ]
 }
 ```
@@ -149,9 +141,9 @@ Request:
 }
 ```
 
-`model` is optional (default `lcm`). Use `"sd15"` for Stable Diffusion 1.5.
+`model` is optional (default `lcm`).
 
-`steps` is optional. Omit it to use the preset default for that model. When set, it must be an integer from 1 to 500. The web UI starts from the preset default and lets you change it.
+`steps` is optional. Omit it to use the preset default. When set, it must be an integer from 1 to 500. The web UI starts from the preset default and lets you change it.
 
 `width` / `height` are optional and must be provided together. Omit them to use the preset default size. When set, the pair must be one of the allowed size options above.
 

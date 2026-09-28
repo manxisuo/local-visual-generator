@@ -1,4 +1,4 @@
-"""OpenVINO GenAI Text2ImagePipeline wrapper — multi-model, serial generate."""
+"""OpenVINO GenAI Text2ImagePipeline wrapper — serial generate."""
 
 from __future__ import annotations
 

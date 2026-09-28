@@ -28,7 +28,7 @@ class ModelSpec:
     description: str
 
 
-# Resolution / naming shared across models; steps are model-specific.
+# Resolution / naming; steps come from the active model preset map.
 QUALITY_PRESETS: dict[str, QualityPreset] = {
     "instant": QualityPreset(
         name="instant",
@@ -67,19 +67,6 @@ MODELS: dict[str, ModelSpec] = {
             "quality": 2,
         },
         description="Fast LCM - default for low latency",
-    ),
-    "sd15": ModelSpec(
-        id="sd15",
-        dir_name="stable-diffusion-v1-5-int8-ov",
-        display_name="Stable Diffusion 1.5 INT8",
-        hf_repo_id="OpenVINO/stable-diffusion-v1-5-int8-ov",
-        # Classic SD needs more steps than LCM; keep sizes the same.
-        steps_by_preset={
-            "instant": 8,
-            "balanced": 16,
-            "quality": 20,
-        },
-        description="SD 1.5 - slower, more steps",
     ),
 }
 
@@ -162,17 +149,21 @@ SEED_MAX = 2**31 - 1
 STEPS_MIN = 1
 STEPS_MAX = 500
 
-# Whitelisted sizes (multiples of 64 keep SD UNet happy; all are multiples of 8).
+# Whitelisted sizes (multiples of 8; prefer multiples of 64 for UNet alignment).
 SIZE_OPTIONS: tuple[tuple[int, int], ...] = (
     (128, 128),
     (192, 192),
     (256, 256),
     (384, 384),
     (512, 512),
+    (768, 768),
+    (1024, 1024),
     (384, 256),
     (256, 384),
     (512, 384),
     (384, 512),
+    (1024, 768),
+    (768, 1024),
 )
 SIZE_OPTION_SET = frozenset(SIZE_OPTIONS)
 
