@@ -3,6 +3,7 @@
   const stepsEl = document.getElementById("steps");
   const stepsHintEl = document.getElementById("steps-hint");
   const sizeHintEl = document.getElementById("size-hint");
+  const styleHintEl = document.getElementById("style-hint");
   const seedEl = document.getElementById("seed");
   const generateBtn = document.getElementById("generate");
   const randomBtn = document.getElementById("random-seed");
@@ -98,11 +99,16 @@
     generateBtn.textContent = busy ? "Generating…" : "Generate";
   }
 
+  function syncStyleHint() {
+    styleHintEl.hidden = selectedType !== "logo";
+  }
+
   document.getElementById("type-options").addEventListener("click", (event) => {
     const btn = event.target.closest("[data-type]");
     if (!btn || btn.disabled) return;
     selectedType = btn.dataset.type;
     selectGroup("#type-options", "type", selectedType);
+    syncStyleHint();
   });
 
   document.getElementById("preset-options").addEventListener("click", (event) => {

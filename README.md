@@ -117,6 +117,12 @@ Types (except `free`) append a short style suffix (composition + visual language
 Presets are kept brief for LCM few-step runs; Icon/Logo emphasize symbol semantics,
 Landscape emphasizes spatial layers. Logo/icon modes are **concept** generators, not precise SVG tools.
 
+**Logo-friendly subjects:** animal, bird, rocket, tree, mountain, leaf, star, abstract object.
+
+**Less suitable for Logo:** running person, complex scene, house beside a lake, multiple objects, action-heavy prompts.
+
+Prefer a single simple noun or emblem idea; Logo will not reliably turn busy scenes into brand marks.
+
 ## API
 
 ### `GET /api/status`

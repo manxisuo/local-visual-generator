@@ -40,6 +40,7 @@ Do **not** optimize for:
 
 Primary use cases: flat illustration, simple anime, icon concept, logo concept, landscape concept, free prompt.
 Logo/icon modes produce **visual concepts**, not production SVG brand assets.
+Logo works best with a single simple subject; action scenes and multi-object prompts are a poor fit — prefer product guidance over further prompt stacking.
 
 ## Validated tech route (do not reopen casually)
 

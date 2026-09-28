@@ -110,14 +110,15 @@ VISUAL_TYPE_TEMPLATES: dict[str, str] = {
         "readable at small size"
     ),
     "logo": (
-        "minimal logo concept, "
+        "minimal brand logo concept, "
         "single simplified symbol, "
-        "clean geometric shape, "
+        "clear iconic shape, "
         "balanced composition, "
         "strong negative space, "
         "2 to 3 solid colors, "
         "plain white background, "
-        "memorable and recognizable"
+        "memorable and recognizable, "
+        "simple brand identity mark"
     ),
     "landscape": (
         "minimalist landscape illustration, "
