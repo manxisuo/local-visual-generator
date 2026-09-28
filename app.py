@@ -6,8 +6,8 @@ import logging
 import sys
 from pathlib import Path
 
-from source.generator import ImageGenerator
-from source.server import AppContext, run_server
+from local_visual_generator.generator import ImageGenerator
+from local_visual_generator.server import AppContext, run_server
 
 
 def main() -> int:

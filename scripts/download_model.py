@@ -12,7 +12,7 @@ from pathlib import Path
 
 from huggingface_hub import snapshot_download
 
-from source.presets import (
+from local_visual_generator.presets import (
     DEFAULT_MODEL,
     MODELS,
     model_available_on_disk,

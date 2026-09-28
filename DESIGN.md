@@ -39,7 +39,7 @@ Already validated on the target machine. Prefer extending this path over replaci
 | Imaging | Pillow |
 | HTTP | stdlib `http.server.ThreadingHTTPServer` + `BaseHTTPRequestHandler` |
 | UI | Static HTML / CSS / Vanilla JS served by the same process |
-| Packaging | `pyproject.toml` + local package `source` |
+| Packaging | `pyproject.toml` + local package `local_visual_generator` |
 
 ### Explicit non-goals / do not introduce without strong reason
 

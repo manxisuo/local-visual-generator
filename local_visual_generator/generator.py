@@ -13,7 +13,7 @@ from typing import Any
 
 from PIL import Image
 
-from source.presets import (
+from local_visual_generator.presets import (
     DEFAULT_DEVICE,
     DEFAULT_MODEL,
     STEPS_MAX,

@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
-from source.generator import ImageGenerator
-from source.presets import (
+from local_visual_generator.generator import ImageGenerator
+from local_visual_generator.presets import (
     DEFAULT_MODEL,
     DEFAULT_PRESET,
     DEFAULT_VISUAL_TYPE,

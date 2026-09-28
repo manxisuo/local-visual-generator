@@ -170,7 +170,7 @@ Serves a generated PNG. Path traversal is rejected.
 
 ```text
 app.py                          # entry point
-source/
+local_visual_generator/
   generator.py                  # OpenVINO pipeline + serial generate lock
   presets.py                    # quality presets + prompt templates
   server.py                     # stdlib HTTP server + API
