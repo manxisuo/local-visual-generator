@@ -14,6 +14,8 @@
   const actionsEl = document.getElementById("actions");
   const openLink = document.getElementById("open-image");
   const downloadLink = document.getElementById("download-image");
+  const advancedEl = document.querySelector(".advanced");
+  const modeFieldset = document.getElementById("preset-options").closest("fieldset");
 
   let selectedType = "illustration";
   let selectedPreset = "balanced";
@@ -21,8 +23,6 @@
   let selectedSize = "256x256";
   let stepsMin = 1;
   let stepsMax = 50;
-  let appliedDefaultSteps = 4;
-  let appliedDefaultSize = "256x256";
   const stepsByPreset = { instant: 2, balanced: 4, quality: 2 };
   const sizeByPreset = {
     instant: "128x128",
@@ -35,25 +35,17 @@
     errorEl.textContent = message || "";
   }
 
-  function setBusy(busy) {
-    generateBtn.disabled = busy;
-    randomBtn.disabled = busy;
-    promptEl.disabled = busy;
-    stepsEl.disabled = busy;
-    seedEl.disabled = busy;
-    document.querySelectorAll(".option").forEach((btn) => {
-      btn.disabled = busy;
-    });
-    generateBtn.textContent = busy ? "Generating…" : "Generate";
+  function isAdvancedOpen() {
+    return Boolean(advancedEl.open);
   }
 
   function defaultSteps() {
     const steps = stepsByPreset[selectedPreset];
-    return Number.isInteger(steps) ? steps : appliedDefaultSteps;
+    return Number.isInteger(steps) ? steps : 4;
   }
 
   function defaultSize() {
-    return sizeByPreset[selectedPreset] || appliedDefaultSize;
+    return sizeByPreset[selectedPreset] || "256x256";
   }
 
   function formatSizeLabel(sizeId) {
@@ -66,30 +58,43 @@
     return { width: Number(match[1]), height: Number(match[2]) };
   }
 
-  function syncStepsToPreset() {
-    const next = defaultSteps();
-    const current = stepsEl.value.trim();
-    if (current === "" || Number(current) === appliedDefaultSteps) {
-      stepsEl.value = String(next);
-    }
-    appliedDefaultSteps = next;
-    stepsHintEl.textContent = `Preset default: ${next}`;
-  }
-
-  function syncSizeToPreset() {
-    const next = defaultSize();
-    if (selectedSize === appliedDefaultSize) {
-      selectedSize = next;
-      selectGroup("#size-options", "size", selectedSize);
-    }
-    appliedDefaultSize = next;
-    sizeHintEl.textContent = `Preset default: ${formatSizeLabel(next)}`;
-  }
-
   function selectGroup(containerSelector, attr, value) {
     document.querySelectorAll(`${containerSelector} .option`).forEach((btn) => {
       btn.classList.toggle("selected", btn.dataset[attr] === value);
     });
+  }
+
+  function applyModeDefaults() {
+    const nextSize = defaultSize();
+    const nextSteps = defaultSteps();
+    selectedSize = nextSize;
+    selectGroup("#size-options", "size", selectedSize);
+    stepsEl.value = String(nextSteps);
+    sizeHintEl.textContent = `Mode default: ${formatSizeLabel(nextSize)}`;
+    stepsHintEl.textContent = `Mode default: ${nextSteps}`;
+  }
+
+  function setModeEnabled(enabled) {
+    modeFieldset.classList.toggle("is-disabled", !enabled);
+    document.querySelectorAll("#preset-options .option").forEach((btn) => {
+      btn.disabled = !enabled;
+    });
+  }
+
+  function setBusy(busy) {
+    generateBtn.disabled = busy;
+    randomBtn.disabled = busy;
+    promptEl.disabled = busy;
+    stepsEl.disabled = busy;
+    seedEl.disabled = busy;
+    advancedEl.querySelector("summary").style.pointerEvents = busy ? "none" : "";
+    document.querySelectorAll("#type-options .option, #size-options .option").forEach((btn) => {
+      btn.disabled = busy;
+    });
+    document.querySelectorAll("#preset-options .option").forEach((btn) => {
+      btn.disabled = busy || isAdvancedOpen();
+    });
+    generateBtn.textContent = busy ? "Generating…" : "Generate";
   }
 
   document.getElementById("type-options").addEventListener("click", (event) => {
@@ -104,8 +109,7 @@
     if (!btn || btn.disabled) return;
     selectedPreset = btn.dataset.preset;
     selectGroup("#preset-options", "preset", selectedPreset);
-    syncSizeToPreset();
-    syncStepsToPreset();
+    applyModeDefaults();
   });
 
   document.getElementById("size-options").addEventListener("click", (event) => {
@@ -113,6 +117,15 @@
     if (!btn || btn.disabled) return;
     selectedSize = btn.dataset.size;
     selectGroup("#size-options", "size", selectedSize);
+  });
+
+  advancedEl.addEventListener("toggle", () => {
+    if (isAdvancedOpen()) {
+      setModeEnabled(false);
+    } else {
+      applyModeDefaults();
+      setModeEnabled(true);
+    }
   });
 
   randomBtn.addEventListener("click", () => {
@@ -155,8 +168,13 @@
       if (data.model_id) {
         selectedModel = data.model_id;
       }
-      syncSizeToPreset();
-      syncStepsToPreset();
+
+      if (!isAdvancedOpen()) {
+        applyModeDefaults();
+      } else {
+        sizeHintEl.textContent = `Mode default: ${formatSizeLabel(defaultSize())}`;
+        stepsHintEl.textContent = `Mode default: ${defaultSteps()}`;
+      }
     } catch (err) {
       statusEl.textContent = "Unable to reach server";
     }
@@ -182,21 +200,28 @@
       return;
     }
 
-    let stepsValue = stepsEl.value.trim();
-    if (!stepsValue) {
-      stepsValue = String(defaultSteps());
-      stepsEl.value = stepsValue;
-    }
-    const steps = Number(stepsValue);
-    if (!Number.isInteger(steps) || steps < stepsMin || steps > stepsMax) {
-      showError(`Steps must be an integer between ${stepsMin} and ${stepsMax}.`);
-      return;
-    }
-
-    const size = parseSize(selectedSize);
-    if (!size) {
-      showError("Please choose a valid size.");
-      return;
+    let size;
+    let steps;
+    if (isAdvancedOpen()) {
+      let stepsValue = stepsEl.value.trim();
+      if (!stepsValue) {
+        stepsValue = String(defaultSteps());
+        stepsEl.value = stepsValue;
+      }
+      steps = Number(stepsValue);
+      if (!Number.isInteger(steps) || steps < stepsMin || steps > stepsMax) {
+        showError(`Steps must be an integer between ${stepsMin} and ${stepsMax}.`);
+        return;
+      }
+      size = parseSize(selectedSize);
+      if (!size) {
+        showError("Please choose a valid size.");
+        return;
+      }
+    } else {
+      applyModeDefaults();
+      size = parseSize(defaultSize());
+      steps = defaultSteps();
     }
 
     setBusy(true);
@@ -244,5 +269,7 @@
     }
   });
 
+  applyModeDefaults();
+  setModeEnabled(true);
   refreshStatus();
 })();

@@ -108,6 +108,52 @@ fieldset .hint {
   margin-top: 0.5rem;
 }
 
+.advanced {
+  margin-top: 1rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+}
+
+.advanced summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  list-style: none;
+  user-select: none;
+}
+
+.advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced summary::before {
+  content: "▸ ";
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.advanced[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.advanced[open] summary {
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+
+fieldset.is-disabled {
+  opacity: 0.55;
+}
+
+fieldset.is-disabled .option {
+  cursor: not-allowed;
+}
+
+.advanced-body {
+  padding-top: 0.25rem;
+}
+
 .steps-row {
   margin-top: 1rem;
 }

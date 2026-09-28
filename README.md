@@ -92,13 +92,13 @@ http://127.0.0.1:7860
 
 ## Presets
 
-### Quality (default size + steps; both can be overridden)
+### Mode (default size + steps; both can be overridden in Advanced)
 
-| Preset | Default size | Steps |
-|---|---|---|
-| `instant` | 128×128 | 2 |
-| `balanced` | 256×256 | 4 |
-| `quality` | 384×384 | 2 |
+| Mode id | UI label | Default size | Steps |
+|---|---|---|---|
+| `instant` | Fast | 128×128 | 2 |
+| `balanced` | Balanced | 256×256 | 4 |
+| `quality` | Quality | 384×384 | 2 |
 
 ### Size options
 

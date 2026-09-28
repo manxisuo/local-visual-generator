@@ -140,7 +140,8 @@ Seed uses OpenVINO GenAI `rng_seed=...`. The API/UI must return the **actual see
 - `steps` is optional (1–500). Omit it to use the model’s quality-preset default
 - `width`/`height` are optional (must be a pair from `SIZE_OPTIONS`). Omit them to use the quality-preset size
 - `/outputs/<filename>` must reject path traversal
-- UI is a single simple page: prompt, type, quality, size, steps, seed, generate, result meta
+- UI primary path: prompt, style, mode, generate — size / steps / seed live under collapsed Advanced
+- While Advanced is collapsed, Mode owns size/steps (switching Mode always rewrites them). While Advanced is open, Mode is disabled and size/steps are authoritative; collapsing Advanced resets size/steps to the current Mode defaults
 
 ## Change guidelines for future sessions
 
