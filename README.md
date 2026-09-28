@@ -189,6 +189,14 @@ Response:
 }
 ```
 
+### `GET /api/gallery`
+
+Lists images under `outputs/` (newest first). Optional query: `offset` (default 0), `limit` (default 24, max 100).
+
+Each item includes `id`, `image` URL, `created_at`, prompt/style/mode fields when a sidecar JSON exists, and `has_metadata`. Images without JSON still appear; unknown fields are `null`. Corrupt sidecars are skipped per image.
+
+New generations also write a same-name `.json` sidecar next to the PNG (`schema_version: 1`) with `input_prompt`, `final_prompt`, `type`, `preset`, `seed`, size, model, device, and elapsed time.
+
 ### `GET /outputs/<filename>`
 
 Serves a generated PNG. Path traversal is rejected.
@@ -199,6 +207,7 @@ Serves a generated PNG. Path traversal is rejected.
 app.py                          # entry point
 local_visual_generator/
   generator.py                  # OpenVINO pipeline + serial generate lock
+  history.py                    # PNG sidecar metadata + gallery listing
   presets.py                    # quality presets + prompt templates
   server.py                     # stdlib HTTP server + API
 web/

@@ -84,8 +84,12 @@ app.py
 POST /api/generate
   -> validate JSON
   -> ImageGenerator.generate(...)   # global lock
-  -> save PNG under outputs/
+  -> save PNG + JSON sidecar under outputs/
   -> return JSON + /outputs/<file>
+
+GET /api/gallery
+  -> scan outputs/ (safe basenames only)
+  -> return newest-first page of image + metadata summaries
 ```
 
 Module responsibilities:
@@ -94,6 +98,7 @@ Module responsibilities:
 |---|---|
 | `app.py` | Thin entrypoint only |
 | `generator.py` | Pipeline lifecycle, model cache, serial `generate()` |
+| `history.py` | Output sidecar metadata + gallery listing |
 | `presets.py` | Models, quality presets, visual-type prompt templates |
 | `server.py` | HTTP routes, static files, JSON API, path-safety |
 | `web/*` | Browser UI |
@@ -152,6 +157,6 @@ Before adding a feature, ask:
 2. Can it be done without new major dependencies?
 3. Does it preserve one-load / serial-generate semantics?
 
-Good follow-ups (when needed): negative prompt, guidance scale exposure, output history list, CLI client.
+Good follow-ups (when needed): negative prompt, guidance scale exposure, gallery thumbnails/cache, CLI client.
 
 Avoid unless explicitly requested: non-LCM model families, GPU default flip, cloud backends, auth, DB, frontend frameworks, ComfyUI / PyTorch stacks, large refactors for abstraction.

@@ -9,6 +9,7 @@
   const randomBtn = document.getElementById("random-seed");
   const statusEl = document.getElementById("status");
   const errorEl = document.getElementById("error");
+  const reuseNoticeEl = document.getElementById("reuse-notice");
   const resultEl = document.getElementById("result");
   const imageEl = document.getElementById("result-image");
   const metaEl = document.getElementById("meta");
@@ -17,6 +18,21 @@
   const downloadLink = document.getElementById("download-image");
   const advancedEl = document.querySelector(".advanced");
   const modeFieldset = document.getElementById("preset-options").closest("fieldset");
+  const controlsEl = document.querySelector(".controls");
+  const generateView = document.getElementById("generate-view");
+  const galleryView = document.getElementById("gallery-view");
+  const galleryStatusEl = document.getElementById("gallery-status");
+  const galleryGridEl = document.getElementById("gallery-grid");
+  const galleryMoreBtn = document.getElementById("gallery-more");
+  const detailDialog = document.getElementById("gallery-detail");
+  const detailImage = document.getElementById("detail-image");
+  const detailFields = document.getElementById("detail-fields");
+  const detailReuseBtn = document.getElementById("detail-reuse");
+  const detailOpen = document.getElementById("detail-open");
+  const detailCopyInput = document.getElementById("detail-copy-input");
+  const detailCopyFinal = document.getElementById("detail-copy-final");
+  const detailClose = document.getElementById("detail-close");
+  const detailReuseNote = document.getElementById("detail-reuse-note");
 
   let selectedType = "illustration";
   let selectedPreset = "balanced";
@@ -31,10 +47,54 @@
     quality: "384x384",
     render: "1024x1024",
   };
+  const knownTypes = new Set([
+    "illustration",
+    "anime",
+    "icon",
+    "logo",
+    "landscape",
+    "free",
+  ]);
+  const knownPresets = new Set(["instant", "balanced", "quality", "render"]);
+  const knownSizes = new Set([
+    "128x128",
+    "192x192",
+    "256x256",
+    "384x384",
+    "512x512",
+    "768x768",
+    "1024x1024",
+    "384x256",
+    "256x384",
+    "512x384",
+    "384x512",
+    "1024x768",
+    "768x1024",
+  ]);
+
+  const PAGE_SIZE = 24;
+  let galleryOffset = 0;
+  let galleryHasMore = false;
+  let galleryLoaded = false;
+  let activeDetailItem = null;
+  let reuseNoticeTimer = null;
 
   function showError(message) {
     errorEl.hidden = !message;
     errorEl.textContent = message || "";
+  }
+
+  function showReuseNotice(message) {
+    reuseNoticeEl.hidden = !message;
+    reuseNoticeEl.textContent = message || "";
+    controlsEl.classList.toggle("is-reused", Boolean(message));
+    if (reuseNoticeTimer) clearTimeout(reuseNoticeTimer);
+    if (message) {
+      reuseNoticeTimer = setTimeout(() => {
+        reuseNoticeEl.hidden = true;
+        controlsEl.classList.remove("is-reused");
+      }, 4000);
+    }
   }
 
   function isAdvancedOpen() {
@@ -102,6 +162,46 @@
   function syncStyleHint() {
     styleHintEl.hidden = selectedType !== "logo";
   }
+
+  function setView(view) {
+    const isGallery = view === "gallery";
+    generateView.hidden = isGallery;
+    galleryView.hidden = !isGallery;
+    document.querySelectorAll(".view-tab").forEach((btn) => {
+      btn.classList.toggle("selected", btn.dataset.view === view);
+    });
+    if (isGallery) {
+      loadGallery({ reset: !galleryLoaded });
+    }
+  }
+
+  function formatTime(iso) {
+    if (!iso) return "Unknown";
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return iso;
+    return date.toLocaleString();
+  }
+
+  function displayValue(value) {
+    if (value === null || value === undefined || value === "") return "Unknown";
+    return String(value);
+  }
+
+  function appendField(dl, label, value, { multiline = false } = {}) {
+    const dt = document.createElement("dt");
+    dt.textContent = label;
+    const dd = document.createElement("dd");
+    dd.textContent = value;
+    if (multiline) dd.classList.add("multiline");
+    dl.appendChild(dt);
+    dl.appendChild(dd);
+  }
+
+  document.querySelector(".view-nav").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-view]");
+    if (!btn) return;
+    setView(btn.dataset.view);
+  });
 
   document.getElementById("type-options").addEventListener("click", (event) => {
     const btn = event.target.closest("[data-type]");
@@ -187,8 +287,257 @@
     }
   }
 
+  function renderGalleryCards(items, { append }) {
+    if (!append) {
+      galleryGridEl.replaceChildren();
+    }
+    items.forEach((item) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "gallery-card";
+      card.dataset.id = item.id;
+
+      const img = document.createElement("img");
+      img.src = item.image;
+      img.alt = item.prompt_summary || item.id;
+      img.loading = "lazy";
+
+      const meta = document.createElement("div");
+      meta.className = "gallery-card-meta";
+
+      const promptLine = document.createElement("strong");
+      promptLine.textContent = item.prompt_summary || "(no prompt recorded)";
+
+      const info = document.createElement("div");
+      const bits = [formatTime(item.created_at)];
+      if (item.type) bits.push(item.type);
+      if (item.preset) bits.push(item.preset);
+      if (item.seed !== null && item.seed !== undefined) bits.push(`seed ${item.seed}`);
+      if (item.steps !== null && item.steps !== undefined) bits.push(`${item.steps} steps`);
+      info.textContent = bits.join(" · ");
+
+      meta.appendChild(promptLine);
+      meta.appendChild(info);
+      card.appendChild(img);
+      card.appendChild(meta);
+      card.addEventListener("click", () => openDetail(item));
+      galleryGridEl.appendChild(card);
+    });
+  }
+
+  async function loadGallery({ reset = false } = {}) {
+    if (reset) {
+      galleryOffset = 0;
+      galleryHasMore = false;
+      galleryLoaded = false;
+      galleryGridEl.hidden = true;
+      galleryMoreBtn.hidden = true;
+      galleryStatusEl.hidden = false;
+      galleryStatusEl.classList.remove("is-error");
+      galleryStatusEl.textContent = "Loading gallery…";
+    } else {
+      galleryMoreBtn.disabled = true;
+      galleryMoreBtn.textContent = "Loading…";
+    }
+
+    try {
+      const res = await fetch(`/api/gallery?offset=${galleryOffset}&limit=${PAGE_SIZE}`);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+
+      const items = Array.isArray(data.items) ? data.items : [];
+      renderGalleryCards(items, { append: !reset && galleryLoaded });
+      galleryOffset = (data.offset || 0) + items.length;
+      galleryHasMore = Boolean(data.has_more);
+      galleryLoaded = true;
+
+      if ((data.total || 0) === 0) {
+        galleryGridEl.hidden = true;
+        galleryStatusEl.hidden = false;
+        galleryStatusEl.classList.remove("is-error");
+        galleryStatusEl.textContent = "No images in outputs/ yet.";
+      } else {
+        galleryStatusEl.hidden = true;
+        galleryGridEl.hidden = false;
+      }
+
+      galleryMoreBtn.hidden = !galleryHasMore;
+      galleryMoreBtn.disabled = false;
+      galleryMoreBtn.textContent = "Load more";
+    } catch (err) {
+      galleryStatusEl.hidden = false;
+      galleryStatusEl.classList.add("is-error");
+      galleryStatusEl.textContent = err.message || String(err);
+      galleryMoreBtn.hidden = true;
+      galleryMoreBtn.disabled = false;
+      galleryMoreBtn.textContent = "Load more";
+    }
+  }
+
+  function openDetail(item) {
+    activeDetailItem = item;
+    detailImage.src = item.image;
+    detailOpen.href = item.image;
+    detailFields.replaceChildren();
+
+    appendField(detailFields, "Created", formatTime(item.created_at));
+    appendField(detailFields, "Input prompt", displayValue(item.input_prompt), {
+      multiline: true,
+    });
+    appendField(detailFields, "Final prompt", displayValue(item.final_prompt), {
+      multiline: true,
+    });
+    appendField(detailFields, "Style (type)", displayValue(item.type));
+    appendField(detailFields, "Mode (preset)", displayValue(item.preset));
+    appendField(detailFields, "Seed", displayValue(item.seed));
+    appendField(detailFields, "Steps", displayValue(item.steps));
+    appendField(
+      detailFields,
+      "Size",
+      item.width && item.height ? `${item.width} × ${item.height}` : "Unknown",
+    );
+    appendField(detailFields, "Model", displayValue(item.model));
+    appendField(detailFields, "Device", displayValue(item.device));
+    appendField(
+      detailFields,
+      "Elapsed",
+      item.elapsed_seconds === null || item.elapsed_seconds === undefined
+        ? "Unknown"
+        : `${item.elapsed_seconds} s`,
+    );
+    appendField(detailFields, "File", item.id);
+
+    const canReuse = Boolean(item.has_metadata && item.input_prompt);
+    detailReuseBtn.hidden = !canReuse;
+    detailReuseNote.hidden = canReuse;
+    detailReuseNote.textContent = canReuse
+      ? ""
+      : "No reusable metadata for this image (older file without sidecar JSON).";
+
+    detailCopyInput.disabled = !item.input_prompt;
+    detailCopyFinal.disabled = !item.final_prompt;
+
+    if (typeof detailDialog.showModal === "function") {
+      detailDialog.showModal();
+    } else {
+      detailDialog.setAttribute("open", "");
+    }
+  }
+
+  function closeDetail() {
+    if (typeof detailDialog.close === "function") {
+      detailDialog.close();
+    } else {
+      detailDialog.removeAttribute("open");
+    }
+  }
+
+  async function copyText(text) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      // Fallback for older/locked clipboard contexts.
+      const area = document.createElement("textarea");
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+  }
+
+  function reuseParameters(item) {
+    if (!item || !item.has_metadata || !item.input_prompt) return;
+
+    const notes = [];
+    promptEl.value = item.input_prompt;
+
+    if (item.type && knownTypes.has(item.type)) {
+      selectedType = item.type;
+      selectGroup("#type-options", "type", selectedType);
+      syncStyleHint();
+    } else if (item.type) {
+      notes.push(`Style "${item.type}" is no longer available; kept current style.`);
+    }
+
+    if (item.preset && knownPresets.has(item.preset)) {
+      selectedPreset = item.preset;
+      selectGroup("#preset-options", "preset", selectedPreset);
+    } else if (item.preset) {
+      notes.push(`Mode "${item.preset}" is no longer available; kept current mode.`);
+    }
+
+    const sizeId =
+      Number.isInteger(item.width) && Number.isInteger(item.height)
+        ? `${item.width}x${item.height}`
+        : null;
+    const hasKnownSize = Boolean(sizeId && knownSizes.has(sizeId));
+    const hasSteps = Number.isInteger(item.steps);
+    const modeDefaultSize = sizeByPreset[selectedPreset] || defaultSize();
+    const modeDefaultSteps = stepsByPreset[selectedPreset] || defaultSteps();
+    const needsAdvanced =
+      (hasKnownSize && sizeId !== modeDefaultSize) ||
+      (hasSteps && item.steps !== modeDefaultSteps);
+
+    if (needsAdvanced) {
+      advancedEl.open = true;
+      setModeEnabled(false);
+    } else {
+      advancedEl.open = false;
+      applyModeDefaults();
+      setModeEnabled(true);
+    }
+
+    if (hasKnownSize) {
+      selectedSize = sizeId;
+      selectGroup("#size-options", "size", selectedSize);
+    } else if (sizeId) {
+      notes.push(`Size ${formatSizeLabel(sizeId)} is not in the whitelist; kept current size.`);
+    }
+
+    if (hasSteps) {
+      stepsEl.value = String(item.steps);
+    }
+
+    if (Number.isInteger(item.seed)) {
+      seedEl.value = String(item.seed);
+    }
+
+    sizeHintEl.textContent = `Mode default: ${formatSizeLabel(defaultSize())}`;
+    stepsHintEl.textContent = `Mode default: ${defaultSteps()}`;
+
+    closeDetail();
+    setView("generate");
+    promptEl.focus();
+    const notice =
+      notes.length > 0
+        ? `Parameters restored. ${notes.join(" ")}`
+        : "Parameters restored — review and generate when ready.";
+    showReuseNotice(notice);
+  }
+
+  galleryMoreBtn.addEventListener("click", () => {
+    loadGallery({ reset: false });
+  });
+
+  detailClose.addEventListener("click", closeDetail);
+  detailReuseBtn.addEventListener("click", () => reuseParameters(activeDetailItem));
+  detailCopyInput.addEventListener("click", () => {
+    if (activeDetailItem) copyText(activeDetailItem.input_prompt);
+  });
+  detailCopyFinal.addEventListener("click", () => {
+    if (activeDetailItem) copyText(activeDetailItem.final_prompt);
+  });
+  detailDialog.addEventListener("click", (event) => {
+    if (event.target === detailDialog) closeDetail();
+  });
+
   generateBtn.addEventListener("click", async () => {
     showError("");
+    showReuseNotice("");
     const prompt = promptEl.value.trim();
     if (!prompt) {
       showError("Please enter a prompt.");
@@ -269,6 +618,12 @@
       downloadLink.href = data.image;
       downloadLink.download = data.image.split("/").pop() || "generated.png";
       statusEl.textContent = `Ready · ${data.model || selectedModel} · last ${data.elapsed}s`;
+
+      // Keep gallery fresh without requiring a page reload.
+      galleryLoaded = false;
+      if (!galleryView.hidden) {
+        loadGallery({ reset: true });
+      }
     } catch (err) {
       showError(err.message || String(err));
     } finally {

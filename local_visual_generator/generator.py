@@ -13,6 +13,10 @@ from typing import Any
 
 from PIL import Image
 
+from local_visual_generator.history import (
+    build_generation_metadata,
+    write_sidecar_metadata,
+)
 from local_visual_generator.presets import (
     DEFAULT_DEVICE,
     DEFAULT_MODEL,
@@ -124,10 +128,18 @@ class ImageGenerator:
                 raise ValueError("width and height must be provided together")
             resolved_w, resolved_h = resolve_size(width, height)
             quality = replace(quality, width=resolved_w, height=resolved_h)
-        full_prompt = build_prompt(prompt, visual_type)
+        input_prompt = prompt.strip()
+        full_prompt = build_prompt(input_prompt, visual_type)
 
         with self._lock:
-            return self._generate_locked(full_prompt, quality, seed, model_id, visual_type)
+            return self._generate_locked(
+                input_prompt=input_prompt,
+                full_prompt=full_prompt,
+                quality=quality,
+                seed=seed,
+                model_id=model_id,
+                visual_type=visual_type,
+            )
 
     def _ensure_pipeline_locked(self, model_id: str) -> Any:
         if model_id in self._pipelines:
@@ -160,6 +172,8 @@ class ImageGenerator:
 
     def _generate_locked(
         self,
+        *,
+        input_prompt: str,
         full_prompt: str,
         quality: QualityPreset,
         seed: int,
@@ -192,7 +206,8 @@ class ImageGenerator:
         elapsed = time.perf_counter() - t0
 
         image = self._tensor_to_pil(result, quality.width, quality.height)
-        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        created_at = datetime.now().astimezone()
+        stamp = created_at.strftime("%Y%m%d-%H%M%S")
         filename = (
             f"{model_id}_{stamp}_{quality.steps}steps_{uuid.uuid4().hex[:8]}.png"
         )
@@ -200,6 +215,27 @@ class ImageGenerator:
         image.save(out_path, format="PNG")
 
         elapsed_s = round(elapsed, 2)
+        metadata = build_generation_metadata(
+            image_file=filename,
+            input_prompt=input_prompt,
+            visual_type=visual_type,
+            preset=quality.name,
+            final_prompt=full_prompt,
+            seed=seed,
+            steps=quality.steps,
+            width=quality.width,
+            height=quality.height,
+            model=model_id,
+            device=self.device,
+            elapsed_seconds=elapsed_s,
+            created_at=created_at,
+        )
+        try:
+            write_sidecar_metadata(out_path, metadata)
+        except OSError:
+            # Image already saved; keep returning success to the UI.
+            pass
+
         self._record_generation(
             model_id=model_id,
             visual_type=visual_type,

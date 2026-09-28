@@ -12,88 +12,119 @@
       <h1>Local Visual Generator</h1>
       <p class="subtitle">Local CPU image generation · OpenVINO</p>
       <p id="status" class="status">Checking status…</p>
+      <nav class="view-nav" aria-label="Views">
+        <button type="button" class="view-tab selected" data-view="generate">Generate</button>
+        <button type="button" class="view-tab" data-view="gallery">Gallery</button>
+      </nav>
     </header>
 
-    <section class="controls">
-      <label for="prompt">Prompt</label>
-      <textarea id="prompt" rows="4" placeholder="a small house beside a lake"></textarea>
+    <section id="generate-view">
+      <section class="controls">
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" rows="4" placeholder="a small house beside a lake"></textarea>
 
-      <fieldset>
-        <legend>Style</legend>
-        <div class="option-row" id="type-options">
-          <button type="button" class="option selected" data-type="illustration">Illustration</button>
-          <button type="button" class="option" data-type="anime">Anime</button>
-          <button type="button" class="option" data-type="icon">Icon</button>
-          <button type="button" class="option" data-type="logo">Logo</button>
-          <button type="button" class="option" data-type="landscape">Landscape</button>
-          <button type="button" class="option" data-type="free">Free</button>
-        </div>
-        <p id="style-hint" class="hint" hidden>
-          Logo works best with one simple subject (animal, leaf, star, rocket…).
-          Avoid action scenes, multi-object, or busy environment prompts.
-        </p>
-      </fieldset>
+        <fieldset>
+          <legend>Style</legend>
+          <div class="option-row" id="type-options">
+            <button type="button" class="option selected" data-type="illustration">Illustration</button>
+            <button type="button" class="option" data-type="anime">Anime</button>
+            <button type="button" class="option" data-type="icon">Icon</button>
+            <button type="button" class="option" data-type="logo">Logo</button>
+            <button type="button" class="option" data-type="landscape">Landscape</button>
+            <button type="button" class="option" data-type="free">Free</button>
+          </div>
+          <p id="style-hint" class="hint" hidden>
+            Logo works best with one simple subject (animal, leaf, star, rocket…).
+            Avoid action scenes, multi-object, or busy environment prompts.
+          </p>
+        </fieldset>
 
-      <fieldset>
-        <legend>Mode</legend>
-        <div class="option-row" id="preset-options">
-          <button type="button" class="option" data-preset="instant">Fast</button>
-          <button type="button" class="option selected" data-preset="balanced">Balanced</button>
-          <button type="button" class="option" data-preset="quality">Quality</button>
-          <button type="button" class="option" data-preset="render">Render</button>
-        </div>
-      </fieldset>
+        <fieldset>
+          <legend>Mode</legend>
+          <div class="option-row" id="preset-options">
+            <button type="button" class="option" data-preset="instant">Fast</button>
+            <button type="button" class="option selected" data-preset="balanced">Balanced</button>
+            <button type="button" class="option" data-preset="quality">Quality</button>
+            <button type="button" class="option" data-preset="render">Render</button>
+          </div>
+        </fieldset>
 
-      <details class="advanced">
-        <summary>Advanced</summary>
-        <div class="advanced-body">
-          <fieldset>
-            <legend>Size</legend>
-            <div class="option-row" id="size-options">
-              <button type="button" class="option" data-size="128x128">128×128</button>
-              <button type="button" class="option" data-size="192x192">192×192</button>
-              <button type="button" class="option selected" data-size="256x256">256×256</button>
-              <button type="button" class="option" data-size="384x384">384×384</button>
-              <button type="button" class="option" data-size="512x512">512×512</button>
-              <button type="button" class="option" data-size="768x768">768×768</button>
-              <button type="button" class="option" data-size="1024x1024">1024×1024</button>
-              <button type="button" class="option" data-size="384x256">384×256</button>
-              <button type="button" class="option" data-size="256x384">256×384</button>
-              <button type="button" class="option" data-size="512x384">512×384</button>
-              <button type="button" class="option" data-size="384x512">384×512</button>
-              <button type="button" class="option" data-size="1024x768">1024×768</button>
-              <button type="button" class="option" data-size="768x1024">768×1024</button>
+        <details class="advanced">
+          <summary>Advanced</summary>
+          <div class="advanced-body">
+            <fieldset>
+              <legend>Size</legend>
+              <div class="option-row" id="size-options">
+                <button type="button" class="option" data-size="128x128">128×128</button>
+                <button type="button" class="option" data-size="192x192">192×192</button>
+                <button type="button" class="option selected" data-size="256x256">256×256</button>
+                <button type="button" class="option" data-size="384x384">384×384</button>
+                <button type="button" class="option" data-size="512x512">512×512</button>
+                <button type="button" class="option" data-size="768x768">768×768</button>
+                <button type="button" class="option" data-size="1024x1024">1024×1024</button>
+                <button type="button" class="option" data-size="384x256">384×256</button>
+                <button type="button" class="option" data-size="256x384">256×384</button>
+                <button type="button" class="option" data-size="512x384">512×384</button>
+                <button type="button" class="option" data-size="384x512">384×512</button>
+                <button type="button" class="option" data-size="1024x768">1024×768</button>
+                <button type="button" class="option" data-size="768x1024">768×1024</button>
+              </div>
+              <p id="size-hint" class="hint">Mode default: 256×256</p>
+            </fieldset>
+
+            <div class="steps-row">
+              <label for="steps">Steps</label>
+              <input id="steps" type="number" min="1" max="50" step="1" value="4" />
+              <p id="steps-hint" class="hint">Mode default: 4</p>
             </div>
-            <p id="size-hint" class="hint">Mode default: 256×256</p>
-          </fieldset>
 
-          <div class="steps-row">
-            <label for="steps">Steps</label>
-            <input id="steps" type="number" min="1" max="50" step="1" value="4" />
-            <p id="steps-hint" class="hint">Mode default: 4</p>
+            <div class="seed-row">
+              <label for="seed">Seed</label>
+              <input id="seed" type="number" min="0" max="2147483647" value="42" />
+              <button type="button" id="random-seed" class="secondary">Random</button>
+            </div>
           </div>
+        </details>
 
-          <div class="seed-row">
-            <label for="seed">Seed</label>
-            <input id="seed" type="number" min="0" max="2147483647" value="42" />
-            <button type="button" id="random-seed" class="secondary">Random</button>
-          </div>
+        <button type="button" id="generate" class="primary">Generate</button>
+        <p id="reuse-notice" class="reuse-notice" hidden></p>
+        <p id="error" class="error" hidden></p>
+      </section>
+
+      <section class="result" id="result" hidden>
+        <img id="result-image" alt="Generated image" hidden />
+        <div id="meta" class="meta" hidden></div>
+        <div id="actions" class="actions" hidden>
+          <a id="open-image" href="#" target="_blank" rel="noopener">Open</a>
+          <a id="download-image" href="#" download>Save</a>
         </div>
-      </details>
-
-      <button type="button" id="generate" class="primary">Generate</button>
-      <p id="error" class="error" hidden></p>
+      </section>
     </section>
 
-    <section class="result" id="result" hidden>
-      <img id="result-image" alt="Generated image" hidden />
-      <div id="meta" class="meta" hidden></div>
-      <div id="actions" class="actions" hidden>
-        <a id="open-image" href="#" target="_blank" rel="noopener">Open</a>
-        <a id="download-image" href="#" download>Save</a>
-      </div>
+    <section id="gallery-view" class="gallery-view" hidden>
+      <div id="gallery-status" class="gallery-status">Loading gallery…</div>
+      <div id="gallery-grid" class="gallery-grid" hidden></div>
+      <button type="button" id="gallery-more" class="secondary gallery-more" hidden>Load more</button>
     </section>
   </main>
+
+  <dialog id="gallery-detail" class="gallery-detail">
+    <div class="gallery-detail-body">
+      <img id="detail-image" alt="Gallery image" />
+      <div class="gallery-detail-meta">
+        <dl id="detail-fields"></dl>
+        <div class="gallery-detail-actions">
+          <button type="button" id="detail-reuse" class="primary">Reuse parameters</button>
+          <a id="detail-open" href="#" target="_blank" rel="noopener">Open original</a>
+          <button type="button" id="detail-copy-input" class="secondary">Copy input prompt</button>
+          <button type="button" id="detail-copy-final" class="secondary">Copy final prompt</button>
+          <button type="button" id="detail-close" class="secondary">Close</button>
+        </div>
+        <p id="detail-reuse-note" class="hint" hidden></p>
+      </div>
+    </div>
+  </dialog>
+
   <script src="/app.js"></script>
 </body>
 </html>

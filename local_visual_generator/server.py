@@ -6,14 +6,14 @@ import json
 import logging
 import mimetypes
 import random
-import re
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from local_visual_generator.generator import ImageGenerator
+from local_visual_generator.history import list_gallery, resolve_output_file
 from local_visual_generator.presets import (
     DEFAULT_MODEL,
     DEFAULT_PRESET,
@@ -33,8 +33,6 @@ from local_visual_generator.presets import (
 )
 
 logger = logging.getLogger(__name__)
-
-_SAFE_OUTPUT_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 class AppContext:
@@ -83,6 +81,9 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
                 payload["steps_max"] = STEPS_MAX
                 self._json_response(HTTPStatus.OK, payload)
                 return
+            if path == "/api/gallery":
+                self._handle_gallery(parsed.query)
+                return
             if path.startswith("/outputs/"):
                 self._serve_output(path[len("/outputs/") :])
                 return
@@ -98,6 +99,24 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
                 return
 
             self._json_response(HTTPStatus.NOT_FOUND, {"error": "Not found"})
+
+        def _handle_gallery(self, query: str) -> None:
+            params = parse_qs(query, keep_blank_values=False)
+            try:
+                offset = _parse_non_negative_int(params.get("offset", ["0"])[0], "offset")
+                limit = _parse_positive_int(params.get("limit", ["24"])[0], "limit")
+                payload = list_gallery(ctx.outputs_dir, offset=offset, limit=limit)
+            except ValueError as exc:
+                self._json_response(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+                return
+            except OSError as exc:
+                logger.exception("Gallery scan failed")
+                self._json_response(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    {"error": f"Failed to read gallery: {exc}"},
+                )
+                return
+            self._json_response(HTTPStatus.OK, payload)
 
         def _handle_generate(self) -> None:
             try:
@@ -182,15 +201,9 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
 
         def _serve_output(self, filename: str) -> None:
             name = filename.strip("/")
-            if not name or not _SAFE_OUTPUT_NAME.match(name) or ".." in name:
+            file_path = resolve_output_file(ctx.outputs_dir, name)
+            if file_path is None:
                 self._json_response(HTTPStatus.BAD_REQUEST, {"error": "Invalid filename"})
-                return
-
-            file_path = (ctx.outputs_dir / name).resolve()
-            try:
-                file_path.relative_to(ctx.outputs_dir)
-            except ValueError:
-                self._json_response(HTTPStatus.BAD_REQUEST, {"error": "Invalid path"})
                 return
 
             if not file_path.is_file():
@@ -250,6 +263,28 @@ def _parse_size(width: object, height: object) -> tuple[int, int] | None:
     if width is None or height is None:
         raise ValueError("width and height must be provided together")
     return resolve_size(_parse_positive_int(width, "width"), _parse_positive_int(height, "height"))
+
+
+def _parse_non_negative_int(value: object, field: str) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"{field} must be an integer")
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValueError(f"{field} must be an integer")
+        value = int(value)
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            raise ValueError(f"{field} must be an integer")
+        try:
+            value = int(value)
+        except ValueError as exc:
+            raise ValueError(f"{field} must be an integer") from exc
+    if not isinstance(value, int):
+        raise ValueError(f"{field} must be an integer")
+    if value < 0:
+        raise ValueError(f"{field} must be >= 0")
+    return value
 
 
 def _parse_positive_int(value: object, field: str) -> int:
