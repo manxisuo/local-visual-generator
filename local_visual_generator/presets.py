@@ -80,63 +80,52 @@ MODELS: dict[str, ModelSpec] = {
 
 DEFAULT_MODEL = "lcm"
 
-# Prompt suffixes that steer toward low-detail, large-block visuals.
+# Short style suffixes: composition + visual language, not stacked synonyms.
+# Prefer "what to draw" over many "no …" negations in the positive prompt.
 VISUAL_TYPE_TEMPLATES: dict[str, str] = {
     "illustration": (
-        "minimalist flat illustration, "
+        "flat illustration, "
+        "single clear subject, "
+        "strong silhouette, "
         "large simple color blocks, "
-        "clean silhouette, "
-        "flat colors, "
         "limited color palette, "
-        "very low detail, "
-        "no texture, "
-        "no text, "
-        "simple composition"
+        "simple background"
     ),
     "anime": (
-        "minimalist anime illustration, "
-        "flat colors, "
-        "large simple color blocks, "
-        "clean silhouette, "
+        "clean anime illustration, "
+        "single clear character, "
+        "clean line art, "
+        "large flat color areas, "
         "simple cel shading, "
         "limited color palette, "
-        "low detail, "
-        "no text"
+        "minimal background"
     ),
     "icon": (
         "minimal app icon, "
-        "abstract geometric symbol, "
-        "flat vector style, "
-        "large simple color shapes, "
-        "clean silhouette, "
-        "very low detail, "
-        "no texture, "
-        "no text, "
-        "limited color palette, "
-        "centered composition"
+        "single centered symbol, "
+        "bold geometric silhouette, "
+        "strong negative space, "
+        "2 to 4 solid colors, "
+        "plain background, "
+        "readable at small size"
     ),
     "logo": (
-        "minimal logo concept, "
-        "abstract geometric mark, "
-        "flat vector style, "
-        "simple shapes, "
-        "clean silhouette, "
-        "limited color palette, "
-        "very low detail, "
-        "no texture, "
-        "no text, "
-        "centered composition, "
-        "white or plain background"
+        "minimal brand mark, "
+        "single abstract symbol, "
+        "simple geometric construction, "
+        "balanced proportions, "
+        "strong negative space, "
+        "2 to 3 solid colors, "
+        "plain white background"
     ),
     "landscape": (
         "minimalist landscape illustration, "
-        "flat colors, "
-        "large color blocks, "
-        "simple geometric shapes, "
-        "clean silhouettes, "
-        "low detail, "
-        "no text, "
-        "limited color palette"
+        "clear focal point, "
+        "foreground middle ground and background, "
+        "large simplified landforms, "
+        "broad flat color areas, "
+        "limited color palette, "
+        "clean silhouettes"
     ),
     "free": "",
 }

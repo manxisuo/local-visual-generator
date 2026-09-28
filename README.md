@@ -113,7 +113,9 @@ Larger sizes (especially 768+) are much slower on CPU; use them for testing.
 
 `illustration`, `anime`, `icon`, `logo`, `landscape`, `free`
 
-Types (except `free`) append a prompt template that favors large color blocks, flat style, and low detail. Logo/icon modes are **concept** generators, not precise SVG logo tools.
+Types (except `free`) append a short style suffix (composition + visual language).
+Presets are kept brief for LCM few-step runs; Icon/Logo emphasize symbol semantics,
+Landscape emphasizes spatial layers. Logo/icon modes are **concept** generators, not precise SVG tools.
 
 ## API
 
