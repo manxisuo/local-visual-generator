@@ -127,7 +127,7 @@ class ImageGenerator:
         full_prompt = build_prompt(prompt, visual_type)
 
         with self._lock:
-            return self._generate_locked(full_prompt, quality, seed, model_id)
+            return self._generate_locked(full_prompt, quality, seed, model_id, visual_type)
 
     def _ensure_pipeline_locked(self, model_id: str) -> Any:
         if model_id in self._pipelines:
@@ -164,13 +164,15 @@ class ImageGenerator:
         quality: QualityPreset,
         seed: int,
         model_id: str,
+        visual_type: str,
     ) -> GenerateResult:
         pipeline = self._ensure_pipeline_locked(model_id)
         self._active_model = model_id
 
         logger.info(
-            "Generating model=%s %dx%d steps=%d seed=%d prompt=%r",
+            "Generating model=%s style=%s %dx%d steps=%d seed=%d prompt=%r",
             model_id,
+            visual_type,
             quality.width,
             quality.height,
             quality.steps,
@@ -200,6 +202,7 @@ class ImageGenerator:
         elapsed_s = round(elapsed, 2)
         self._record_generation(
             model_id=model_id,
+            visual_type=visual_type,
             width=quality.width,
             height=quality.height,
             steps=quality.steps,
@@ -224,6 +227,7 @@ class ImageGenerator:
         self,
         *,
         model_id: str,
+        visual_type: str,
         width: int,
         height: int,
         steps: int,
@@ -235,6 +239,7 @@ class ImageGenerator:
         line = (
             f"{now.strftime('%Y-%m-%d %H:%M:%S')} | "
             f"model={model_id} | "
+            f"style={visual_type} | "
             f"size={width}x{height} | "
             f"steps={steps} | "
             f"seed={seed} | "
