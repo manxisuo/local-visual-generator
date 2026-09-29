@@ -6,6 +6,7 @@ import json
 import logging
 import mimetypes
 import random
+import re
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -195,6 +196,11 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
                 seed = _parse_seed(body.get("seed"))
                 steps = _parse_steps(body.get("steps"))
                 size = _parse_size(body.get("width"), body.get("height"))
+                batch = _parse_batch(
+                    body.get("batch_id"),
+                    body.get("batch_index"),
+                    body.get("batch_count"),
+                )
             except ValueError as exc:
                 self._json_response(
                     HTTPStatus.BAD_REQUEST,
@@ -212,6 +218,9 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
                     steps=steps,
                     width=None if size is None else size[0],
                     height=None if size is None else size[1],
+                    batch_id=None if batch is None else batch[0],
+                    batch_index=None if batch is None else batch[1],
+                    batch_count=None if batch is None else batch[2],
                 )
             except FileNotFoundError as exc:
                 self._json_response(
@@ -227,19 +236,21 @@ def create_handler(ctx: AppContext) -> type[BaseHTTPRequestHandler]:
                 )
                 return
 
-            self._json_response(
-                HTTPStatus.OK,
-                {
-                    "success": True,
-                    "elapsed": result.elapsed,
-                    "width": result.width,
-                    "height": result.height,
-                    "steps": result.steps,
-                    "seed": result.seed,
-                    "model": result.model,
-                    "image": result.relative_url,
-                },
-            )
+            payload: dict[str, Any] = {
+                "success": True,
+                "elapsed": result.elapsed,
+                "width": result.width,
+                "height": result.height,
+                "steps": result.steps,
+                "seed": result.seed,
+                "model": result.model,
+                "image": result.relative_url,
+            }
+            if result.batch_id is not None:
+                payload["batch_id"] = result.batch_id
+                payload["batch_index"] = result.batch_index
+                payload["batch_count"] = result.batch_count
+            self._json_response(HTTPStatus.OK, payload)
 
         def _serve_output(self, filename: str) -> None:
             name = filename.strip("/")
@@ -398,6 +409,36 @@ def _parse_seed(value: object) -> int:
     if value < SEED_MIN or value > SEED_MAX:
         raise ValueError(f"seed must be between {SEED_MIN} and {SEED_MAX}")
     return value
+
+
+_BATCH_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+_ALLOWED_BATCH_COUNTS = frozenset({1, 2, 4, 8})
+
+
+def _parse_batch(
+    batch_id: object,
+    batch_index: object,
+    batch_count: object,
+) -> tuple[str, int, int] | None:
+    """Return (batch_id, batch_index, batch_count) or None when all omitted."""
+    omitted = batch_id is None and batch_index is None and batch_count is None
+    if omitted:
+        return None
+    if batch_id is None or batch_index is None or batch_count is None:
+        raise ValueError("batch_id, batch_index, and batch_count must be provided together")
+
+    if not isinstance(batch_id, str) or not _BATCH_ID_RE.match(batch_id.strip()):
+        raise ValueError("batch_id must be 1–64 chars of letters, digits, . _ -")
+    bid = batch_id.strip()
+
+    count = _parse_positive_int(batch_count, "batch_count")
+    if count not in _ALLOWED_BATCH_COUNTS:
+        raise ValueError("batch_count must be one of 1, 2, 4, 8")
+
+    index = _parse_positive_int(batch_index, "batch_index")
+    if index > count:
+        raise ValueError("batch_index must be between 1 and batch_count")
+    return bid, index, count
 
 
 def run_server(ctx: AppContext, host: str = "0.0.0.0", port: int = 7860) -> None:

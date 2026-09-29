@@ -46,6 +46,9 @@ class GenerateResult:
     elapsed: float
     prompt_used: str
     model: str
+    batch_id: str | None = None
+    batch_index: int | None = None
+    batch_count: int | None = None
 
 
 class ImageGenerator:
@@ -112,6 +115,9 @@ class ImageGenerator:
         steps: int | None = None,
         width: int | None = None,
         height: int | None = None,
+        batch_id: str | None = None,
+        batch_index: int | None = None,
+        batch_count: int | None = None,
     ) -> GenerateResult:
         if not self._ready:
             raise RuntimeError("Generator is not ready. Call load() first.")
@@ -139,6 +145,9 @@ class ImageGenerator:
                 seed=seed,
                 model_id=model_id,
                 visual_type=visual_type,
+                batch_id=batch_id,
+                batch_index=batch_index,
+                batch_count=batch_count,
             )
 
     def _ensure_pipeline_locked(self, model_id: str) -> Any:
@@ -179,6 +188,9 @@ class ImageGenerator:
         seed: int,
         model_id: str,
         visual_type: str,
+        batch_id: str | None = None,
+        batch_index: int | None = None,
+        batch_count: int | None = None,
     ) -> GenerateResult:
         pipeline = self._ensure_pipeline_locked(model_id)
         self._active_model = model_id
@@ -229,6 +241,9 @@ class ImageGenerator:
             device=self.device,
             elapsed_seconds=elapsed_s,
             created_at=created_at,
+            batch_id=batch_id,
+            batch_index=batch_index,
+            batch_count=batch_count,
         )
         try:
             write_sidecar_metadata(out_path, metadata)
@@ -257,6 +272,9 @@ class ImageGenerator:
             elapsed=elapsed_s,
             prompt_used=full_prompt,
             model=model_id,
+            batch_id=batch_id,
+            batch_index=batch_index,
+            batch_count=batch_count,
         )
 
     def _record_generation(

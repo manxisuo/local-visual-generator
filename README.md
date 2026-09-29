@@ -172,7 +172,10 @@ Request:
   "width": 256,
   "height": 256,
   "steps": 4,
-  "seed": 42
+  "seed": 42,
+  "batch_id": "b_example",
+  "batch_index": 1,
+  "batch_count": 4
 }
 ```
 
@@ -181,6 +184,8 @@ Request:
 `steps` is optional. Omit it to use the preset default. When set, it must be an integer from 1 to 50. The web UI starts from the preset default and lets you change it.
 
 `width` / `height` are optional and must be provided together. Omit them to use the preset default size. When set, the pair must be one of the allowed size options above.
+
+`batch_id` / `batch_index` / `batch_count` are optional and must be provided together. Use them when the UI runs a sequential multi-image batch (`batch_count` is 1, 2, 4, or 8; `batch_index` is 1-based). Each call still generates **one** image under the serial pipeline lock. The web UI pre-assigns seeds (`base`, `base+1`, …) and calls this endpoint once per image so each PNG/JSON records its own seed and batch membership.
 
 Response:
 
@@ -193,7 +198,10 @@ Response:
   "steps": 4,
   "seed": 42,
   "model": "lcm",
-  "image": "/outputs/....png"
+  "image": "/outputs/....png",
+  "batch_id": "b_example",
+  "batch_index": 1,
+  "batch_count": 4
 }
 ```
 
@@ -201,9 +209,9 @@ Response:
 
 Lists images under `outputs/` (newest first). Optional query: `offset` (default 0), `limit` (default 24, max 100).
 
-Each item includes `id`, `image` URL, `created_at`, prompt/style/mode fields when a sidecar JSON exists, and `has_metadata`. Images without JSON still appear; unknown fields are `null`. Corrupt sidecars are skipped per image.
+Each item includes `id`, `image` URL, `created_at`, prompt/style/mode fields when a sidecar JSON exists, and `has_metadata`. Batch fields (`batch_id`, `batch_index`, `batch_count`) are included when present so the Gallery UI can group a sequential run. Images without JSON still appear; unknown fields are `null`. Corrupt sidecars are skipped per image.
 
-New generations also write a same-name `.json` sidecar next to the PNG (`schema_version: 1`) with `input_prompt`, `final_prompt`, `type`, `preset`, `seed`, size, model, device, and elapsed time.
+New generations also write a same-name `.json` sidecar next to the PNG (`schema_version: 1`) with `input_prompt`, `final_prompt`, `type`, `preset`, `seed`, size, model, device, elapsed time, and optional batch fields.
 
 ### `POST /api/gallery/delete`
 

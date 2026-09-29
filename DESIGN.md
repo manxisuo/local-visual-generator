@@ -146,7 +146,8 @@ Seed uses OpenVINO GenAI `rng_seed=...`. The API/UI must return the **actual see
 - `steps` is optional (1–500). Omit it to use the model’s quality-preset default
 - `width`/`height` are optional (must be a pair from `SIZE_OPTIONS`). Omit them to use the quality-preset size
 - `/outputs/<filename>` must reject path traversal
-- UI primary path: prompt, style, mode, generate — size / steps / seed live under collapsed Advanced
+- UI primary path: prompt, style, mode, count, generate — size / steps / seed live under collapsed Advanced
+- Count is 1 / 2 / 4 / 8. The UI pre-assigns seeds and calls `/api/generate` sequentially (never parallel pipelines). Each finished image is shown and saved immediately; Cancel stops remaining requests and keeps completed outputs. Gallery groups items that share a `batch_id`.
 - While Advanced is collapsed, Mode owns size/steps (switching Mode always rewrites them). While Advanced is open, Mode is disabled and size/steps are authoritative; collapsing Advanced resets size/steps to the current Mode defaults
 
 ## Change guidelines for future sessions

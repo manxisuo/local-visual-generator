@@ -6,12 +6,14 @@
   const styleHintEl = document.getElementById("style-hint");
   const seedEl = document.getElementById("seed");
   const generateBtn = document.getElementById("generate");
+  const cancelBtn = document.getElementById("cancel-generate");
   const randomBtn = document.getElementById("random-seed");
   const statusEl = document.getElementById("status");
   const errorEl = document.getElementById("error");
   const reuseNoticeEl = document.getElementById("reuse-notice");
   const resultEl = document.getElementById("result");
-  const imageEl = document.getElementById("result-image");
+  const resultProgressEl = document.getElementById("result-progress");
+  const resultGridEl = document.getElementById("result-grid");
   const metaEl = document.getElementById("meta");
   const actionsEl = document.getElementById("actions");
   const openLink = document.getElementById("open-image");
@@ -39,6 +41,7 @@
   let selectedPreset = "balanced";
   let selectedModel = "lcm";
   let selectedSize = "256x256";
+  let selectedCount = 1;
   let stepsMin = 1;
   let stepsMax = 50;
   const stepsByPreset = { instant: 2, balanced: 4, quality: 2, render: 4 };
@@ -57,6 +60,7 @@
     "free",
   ]);
   const knownPresets = new Set(["instant", "balanced", "quality", "render"]);
+  const knownCounts = new Set([1, 2, 4, 8]);
   const knownSizes = new Set([
     "128x128",
     "192x192",
@@ -72,13 +76,17 @@
     "1024x768",
     "768x1024",
   ]);
+  const SEED_MAX = 2147483647;
 
   const PAGE_SIZE = 24;
   let galleryOffset = 0;
   let galleryHasMore = false;
   let galleryLoaded = false;
+  let galleryItems = [];
   let activeDetailItem = null;
   let reuseNoticeTimer = null;
+  let cancelRequested = false;
+  let selectedResult = null;
 
   function showError(message) {
     errorEl.hidden = !message;
@@ -150,14 +158,110 @@
     promptEl.disabled = busy;
     stepsEl.disabled = busy;
     seedEl.disabled = busy;
+    cancelBtn.hidden = !busy;
+    cancelBtn.disabled = !busy;
     advancedEl.querySelector("summary").style.pointerEvents = busy ? "none" : "";
-    document.querySelectorAll("#type-options .option, #size-options .option").forEach((btn) => {
-      btn.disabled = busy;
-    });
+    document
+      .querySelectorAll("#type-options .option, #size-options .option, #count-options .option")
+      .forEach((btn) => {
+        btn.disabled = busy;
+      });
     document.querySelectorAll("#preset-options .option").forEach((btn) => {
       btn.disabled = busy || isAdvancedOpen();
     });
-    generateBtn.textContent = busy ? "Generating…" : "Generate";
+    if (busy) {
+      generateBtn.textContent =
+        selectedCount > 1 ? `Generating… 0/${selectedCount}` : "Generating…";
+    } else {
+      generateBtn.textContent = "Generate";
+    }
+  }
+
+  function makeBatchId() {
+    return `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  function allocateSeeds(baseSeed, count) {
+    const seeds = [];
+    for (let i = 0; i < count; i += 1) {
+      seeds.push((baseSeed + i) % (SEED_MAX + 1));
+    }
+    return seeds;
+  }
+
+  function clearResultPanel() {
+    resultGridEl.replaceChildren();
+    selectedResult = null;
+    resultProgressEl.hidden = true;
+    resultProgressEl.textContent = "";
+    metaEl.hidden = true;
+    metaEl.textContent = "";
+    actionsEl.hidden = true;
+  }
+
+  function showSelectedResult(item) {
+    selectedResult = item;
+    resultGridEl.querySelectorAll(".result-thumb").forEach((btn) => {
+      btn.classList.toggle("selected", btn.dataset.image === item.image);
+    });
+    seedEl.value = String(item.seed);
+    metaEl.hidden = false;
+    const batchLine =
+      item.batch_count > 1
+        ? `\nBatch ${item.batch_index}/${item.batch_count}`
+        : "";
+    metaEl.textContent =
+      `${item.model || selectedModel}\n` +
+      `${item.width} × ${item.height}\n` +
+      `${item.steps} steps\n` +
+      `${item.elapsed} s\n` +
+      `Seed ${item.seed}` +
+      batchLine;
+    actionsEl.hidden = false;
+    openLink.href = item.image;
+    downloadLink.href = item.image;
+    downloadLink.download = item.image.split("/").pop() || "generated.png";
+  }
+
+  function appendResultThumb(item) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "result-thumb";
+    btn.dataset.image = item.image;
+
+    const img = document.createElement("img");
+    img.src = `${item.image}?t=${Date.now()}`;
+    img.alt = `Generated ${item.batch_index}/${item.batch_count}`;
+
+    const label = document.createElement("span");
+    label.className = "result-thumb-label";
+    label.textContent =
+      item.batch_count > 1
+        ? `${item.batch_index}/${item.batch_count} · seed ${item.seed}`
+        : `seed ${item.seed}`;
+
+    btn.appendChild(img);
+    btn.appendChild(label);
+    btn.addEventListener("click", () => showSelectedResult(item));
+    resultGridEl.appendChild(btn);
+    showSelectedResult(item);
+  }
+
+  function updateBatchProgress(done, total, { cancelled = false } = {}) {
+    resultProgressEl.hidden = false;
+    if (cancelled) {
+      resultProgressEl.textContent = `Cancelled after ${done}/${total}. Completed images were kept.`;
+    } else if (done < total) {
+      const label =
+        total > 1 ? `Generating ${done + 1}/${total}…` : "Generating…";
+      resultProgressEl.hidden = total <= 1;
+      resultProgressEl.textContent = label;
+      generateBtn.textContent = label;
+    } else {
+      resultProgressEl.textContent =
+        total > 1 ? `Done ${done}/${total}` : "";
+      if (total <= 1) resultProgressEl.hidden = true;
+    }
   }
 
   function syncStyleHint() {
@@ -227,6 +331,21 @@
     selectGroup("#size-options", "size", selectedSize);
   });
 
+  document.getElementById("count-options").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-count]");
+    if (!btn || btn.disabled) return;
+    const next = Number(btn.dataset.count);
+    if (!knownCounts.has(next)) return;
+    selectedCount = next;
+    selectGroup("#count-options", "count", String(selectedCount));
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    cancelRequested = true;
+    cancelBtn.disabled = true;
+    cancelBtn.textContent = "Cancelling…";
+  });
+
   advancedEl.addEventListener("toggle", () => {
     if (isAdvancedOpen()) {
       setModeEnabled(false);
@@ -237,7 +356,7 @@
   });
 
   randomBtn.addEventListener("click", () => {
-    seedEl.value = String(Math.floor(Math.random() * 2147483647));
+    seedEl.value = String(Math.floor(Math.random() * (SEED_MAX + 1)));
   });
 
   async function refreshStatus() {
@@ -288,41 +407,108 @@
     }
   }
 
-  function renderGalleryCards(items, { append }) {
-    if (!append) {
-      galleryGridEl.replaceChildren();
+  function createGalleryCard(item) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "gallery-card";
+    card.dataset.id = item.id;
+
+    const img = document.createElement("img");
+    img.src = item.image;
+    img.alt = item.prompt_summary || item.id;
+    img.loading = "lazy";
+
+    const meta = document.createElement("div");
+    meta.className = "gallery-card-meta";
+
+    const promptLine = document.createElement("strong");
+    promptLine.textContent = item.prompt_summary || "(no prompt recorded)";
+
+    const info = document.createElement("div");
+    const bits = [formatTime(item.created_at)];
+    if (item.type) bits.push(item.type);
+    if (item.preset) bits.push(item.preset);
+    if (item.seed !== null && item.seed !== undefined) bits.push(`seed ${item.seed}`);
+    if (item.steps !== null && item.steps !== undefined) bits.push(`${item.steps} steps`);
+    if (
+      item.batch_id &&
+      Number.isInteger(item.batch_index) &&
+      Number.isInteger(item.batch_count) &&
+      item.batch_count > 1
+    ) {
+      bits.push(`${item.batch_index}/${item.batch_count}`);
     }
+    info.textContent = bits.join(" · ");
+
+    meta.appendChild(promptLine);
+    meta.appendChild(info);
+    card.appendChild(img);
+    card.appendChild(meta);
+    card.addEventListener("click", () => openDetail(item));
+    return card;
+  }
+
+  function groupGalleryItems(items) {
+    const groups = [];
+    const batchIndex = new Map();
+
     items.forEach((item) => {
-      const card = document.createElement("button");
-      card.type = "button";
-      card.className = "gallery-card";
-      card.dataset.id = item.id;
+      const bid = item.batch_id;
+      const count = item.batch_count;
+      if (bid && Number.isInteger(count) && count > 1) {
+        if (batchIndex.has(bid)) {
+          groups[batchIndex.get(bid)].items.push(item);
+        } else {
+          batchIndex.set(bid, groups.length);
+          groups.push({ kind: "batch", batch_id: bid, batch_count: count, items: [item] });
+        }
+        return;
+      }
+      const last = groups[groups.length - 1];
+      if (last && last.kind === "single") {
+        last.items.push(item);
+      } else {
+        groups.push({ kind: "single", items: [item] });
+      }
+    });
 
-      const img = document.createElement("img");
-      img.src = item.image;
-      img.alt = item.prompt_summary || item.id;
-      img.loading = "lazy";
+    groups.forEach((group) => {
+      if (group.kind !== "batch") return;
+      group.items.sort((a, b) => {
+        const ai = Number.isInteger(a.batch_index) ? a.batch_index : 0;
+        const bi = Number.isInteger(b.batch_index) ? b.batch_index : 0;
+        return ai - bi;
+      });
+    });
+    return groups;
+  }
 
-      const meta = document.createElement("div");
-      meta.className = "gallery-card-meta";
+  function renderGalleryCards(items) {
+    galleryGridEl.replaceChildren();
+    const groups = groupGalleryItems(items);
+    groups.forEach((group) => {
+      if (group.kind === "batch") {
+        const wrap = document.createElement("div");
+        wrap.className = "gallery-batch";
 
-      const promptLine = document.createElement("strong");
-      promptLine.textContent = item.prompt_summary || "(no prompt recorded)";
+        const header = document.createElement("p");
+        header.className = "gallery-batch-header";
+        header.textContent = `Batch · ${group.items.length}/${group.batch_count} images`;
 
-      const info = document.createElement("div");
-      const bits = [formatTime(item.created_at)];
-      if (item.type) bits.push(item.type);
-      if (item.preset) bits.push(item.preset);
-      if (item.seed !== null && item.seed !== undefined) bits.push(`seed ${item.seed}`);
-      if (item.steps !== null && item.steps !== undefined) bits.push(`${item.steps} steps`);
-      info.textContent = bits.join(" · ");
+        const grid = document.createElement("div");
+        grid.className = "gallery-batch-grid";
+        group.items.forEach((item) => grid.appendChild(createGalleryCard(item)));
 
-      meta.appendChild(promptLine);
-      meta.appendChild(info);
-      card.appendChild(img);
-      card.appendChild(meta);
-      card.addEventListener("click", () => openDetail(item));
-      galleryGridEl.appendChild(card);
+        wrap.appendChild(header);
+        wrap.appendChild(grid);
+        galleryGridEl.appendChild(wrap);
+        return;
+      }
+
+      const singles = document.createElement("div");
+      singles.className = "gallery-singles";
+      group.items.forEach((item) => singles.appendChild(createGalleryCard(item)));
+      galleryGridEl.appendChild(singles);
     });
   }
 
@@ -331,6 +517,7 @@
       galleryOffset = 0;
       galleryHasMore = false;
       galleryLoaded = false;
+      galleryItems = [];
       galleryGridEl.hidden = true;
       galleryMoreBtn.hidden = true;
       galleryStatusEl.hidden = false;
@@ -349,12 +536,17 @@
       }
 
       const items = Array.isArray(data.items) ? data.items : [];
-      renderGalleryCards(items, { append: !reset && galleryLoaded });
+      if (reset) {
+        galleryItems = items;
+      } else {
+        galleryItems = galleryItems.concat(items);
+      }
+      renderGalleryCards(galleryItems);
       galleryOffset = (data.offset || 0) + items.length;
       galleryHasMore = Boolean(data.has_more);
       galleryLoaded = true;
 
-      if ((data.total || 0) === 0) {
+      if (galleryItems.length === 0) {
         galleryGridEl.hidden = true;
         galleryStatusEl.hidden = false;
         galleryStatusEl.classList.remove("is-error");
@@ -408,6 +600,18 @@
         ? "Unknown"
         : `${item.elapsed_seconds} s`,
     );
+    if (
+      item.batch_id &&
+      Number.isInteger(item.batch_index) &&
+      Number.isInteger(item.batch_count) &&
+      item.batch_count > 1
+    ) {
+      appendField(
+        detailFields,
+        "Batch",
+        `${item.batch_index}/${item.batch_count} (${item.batch_id})`,
+      );
+    }
     appendField(detailFields, "File", item.id);
 
     const canReuse = Boolean(item.has_metadata && item.input_prompt);
@@ -575,13 +779,13 @@
 
     let seedValue = seedEl.value.trim();
     if (!seedValue) {
-      seedValue = String(Math.floor(Math.random() * 2147483647));
+      seedValue = String(Math.floor(Math.random() * (SEED_MAX + 1)));
       seedEl.value = seedValue;
     }
 
-    const seed = Number(seedValue);
-    if (!Number.isInteger(seed) || seed < 0 || seed > 2147483647) {
-      showError("Seed must be an integer between 0 and 2147483647.");
+    const baseSeed = Number(seedValue);
+    if (!Number.isInteger(baseSeed) || baseSeed < 0 || baseSeed > SEED_MAX) {
+      showError(`Seed must be an integer between 0 and ${SEED_MAX}.`);
       return;
     }
 
@@ -609,53 +813,95 @@
       steps = defaultSteps();
     }
 
-    setBusy(true);
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({
-          prompt,
-          type: selectedType,
-          preset: selectedPreset,
-          model: selectedModel,
-          width: size.width,
-          height: size.height,
-          steps,
-          seed,
-        }),
-      });
+    const count = selectedCount;
+    const seeds = allocateSeeds(baseSeed, count);
+    const batchId = makeBatchId();
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || `Request failed (${res.status})`);
+    cancelRequested = false;
+    cancelBtn.textContent = "Cancel";
+    clearResultPanel();
+    resultEl.hidden = false;
+    setBusy(true);
+    updateBatchProgress(0, count);
+
+    let completed = 0;
+    let lastElapsed = null;
+    let stoppedEarly = false;
+
+    try {
+      for (let i = 0; i < count; i += 1) {
+        if (cancelRequested) {
+          stoppedEarly = true;
+          break;
+        }
+
+        updateBatchProgress(completed, count);
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+          body: JSON.stringify({
+            prompt,
+            type: selectedType,
+            preset: selectedPreset,
+            model: selectedModel,
+            width: size.width,
+            height: size.height,
+            steps,
+            seed: seeds[i],
+            batch_id: batchId,
+            batch_index: i + 1,
+            batch_count: count,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || `Request failed (${res.status})`);
+        }
+
+        completed += 1;
+        lastElapsed = data.elapsed;
+        appendResultThumb({
+          image: data.image,
+          width: data.width,
+          height: data.height,
+          steps: data.steps,
+          seed: data.seed,
+          elapsed: data.elapsed,
+          model: data.model,
+          batch_id: data.batch_id || batchId,
+          batch_index: data.batch_index || i + 1,
+          batch_count: data.batch_count || count,
+        });
+
+        if (cancelRequested && i + 1 < count) {
+          stoppedEarly = true;
+          break;
+        }
       }
 
-      seedEl.value = String(data.seed);
-      resultEl.hidden = false;
-      imageEl.hidden = false;
-      imageEl.src = `${data.image}?t=${Date.now()}`;
-      metaEl.hidden = false;
-      metaEl.textContent =
-        `${data.model || selectedModel}\n` +
-        `${data.width} × ${data.height}\n` +
-        `${data.steps} steps\n` +
-        `${data.elapsed} s\n` +
-        `Seed ${data.seed}`;
-      actionsEl.hidden = false;
-      openLink.href = data.image;
-      downloadLink.href = data.image;
-      downloadLink.download = data.image.split("/").pop() || "generated.png";
-      statusEl.textContent = `Ready · ${data.model || selectedModel} · last ${data.elapsed}s`;
+      if (stoppedEarly) {
+        updateBatchProgress(completed, count, { cancelled: true });
+      } else {
+        updateBatchProgress(completed, count);
+      }
 
-      // Keep gallery fresh without requiring a page reload.
+      if (lastElapsed !== null) {
+        statusEl.textContent = `Ready · ${selectedModel} · last ${lastElapsed}s`;
+      }
+
       galleryLoaded = false;
       if (!galleryView.hidden) {
         loadGallery({ reset: true });
       }
     } catch (err) {
       showError(err.message || String(err));
+      if (completed > 0) {
+        updateBatchProgress(completed, count, { cancelled: cancelRequested });
+      }
     } finally {
+      cancelRequested = false;
+      cancelBtn.textContent = "Cancel";
       setBusy(false);
     }
   });

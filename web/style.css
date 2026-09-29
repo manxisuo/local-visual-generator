@@ -179,13 +179,29 @@ fieldset.is-disabled .option {
 }
 
 .primary {
-  margin-top: 1.25rem;
+  margin-top: 0;
   width: 100%;
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
   padding: 0.75rem 1rem;
   font-weight: 600;
+}
+
+.generate-row {
+  margin-top: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.generate-row:has(#cancel-generate:not([hidden])) {
+  grid-template-columns: 1fr auto;
+}
+
+#cancel-generate {
+  align-self: stretch;
+  padding: 0.75rem 1rem;
 }
 
 .primary:hover:not(:disabled) {
@@ -209,17 +225,46 @@ fieldset.is-disabled .option {
   display: none;
 }
 
-#result-image {
+.result-progress {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.result-thumb {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.result-thumb.selected {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.result-thumb img {
   display: block;
-  max-width: 100%;
+  width: 100%;
   height: auto;
-  margin: 0 auto;
-  image-rendering: auto;
   background: #eee;
 }
 
-#result-image[hidden] {
-  display: none;
+.result-thumb-label {
+  display: block;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 .meta {
@@ -227,6 +272,7 @@ fieldset.is-disabled .option {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.5;
+  white-space: pre-line;
 }
 
 .actions {
@@ -285,20 +331,41 @@ fieldset.is-disabled .option {
 }
 
 .gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   margin-top: 1rem;
 }
 
+.gallery-batch {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0.75rem;
+}
+
+.gallery-batch-header {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.gallery-batch-grid,
+.gallery-singles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
 @media (max-width: 720px) {
-  .gallery-grid {
+  .gallery-batch-grid,
+  .gallery-singles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 420px) {
-  .gallery-grid {
+  .gallery-batch-grid,
+  .gallery-singles {
     grid-template-columns: 1fr;
   }
 }

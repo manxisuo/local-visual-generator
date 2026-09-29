@@ -97,11 +97,14 @@ def build_generation_metadata(
     device: str,
     elapsed_seconds: float,
     created_at: datetime | None = None,
+    batch_id: str | None = None,
+    batch_index: int | None = None,
+    batch_count: int | None = None,
 ) -> dict[str, Any]:
     when = created_at or datetime.now().astimezone()
     if when.tzinfo is None:
         when = when.replace(tzinfo=timezone.utc)
-    return {
+    payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "created_at": when.isoformat(timespec="seconds"),
         "image_file": image_file,
@@ -117,6 +120,11 @@ def build_generation_metadata(
         "device": device,
         "elapsed_seconds": elapsed_seconds,
     }
+    if batch_id is not None and batch_index is not None and batch_count is not None:
+        payload["batch_id"] = batch_id
+        payload["batch_index"] = batch_index
+        payload["batch_count"] = batch_count
+    return payload
 
 
 def _parse_created_at(value: object) -> datetime | None:
@@ -174,6 +182,9 @@ def _item_from_image(image_path: Path) -> dict[str, Any]:
         "model": None,
         "device": None,
         "elapsed_seconds": None,
+        "batch_id": None,
+        "batch_index": None,
+        "batch_count": None,
     }
 
     sidecar = _read_sidecar(image_path.with_suffix(".json"))
@@ -223,6 +234,9 @@ def _item_from_image(image_path: Path) -> dict[str, Any]:
     item["model"] = _str_field("model")
     item["device"] = _str_field("device")
     item["elapsed_seconds"] = _float_field("elapsed_seconds")
+    item["batch_id"] = _str_field("batch_id")
+    item["batch_index"] = _int_field("batch_index")
+    item["batch_count"] = _int_field("batch_count")
     return item
 
 

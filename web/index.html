@@ -49,6 +49,17 @@
           </div>
         </fieldset>
 
+        <fieldset>
+          <legend>Count</legend>
+          <div class="option-row" id="count-options">
+            <button type="button" class="option selected" data-count="1">1</button>
+            <button type="button" class="option" data-count="2">2</button>
+            <button type="button" class="option" data-count="4">4</button>
+            <button type="button" class="option" data-count="8">8</button>
+          </div>
+          <p class="hint">Images run one after another (not in parallel). A batch of 4 takes about 4× one image.</p>
+        </fieldset>
+
         <details class="advanced">
           <summary>Advanced</summary>
           <div class="advanced-body">
@@ -86,13 +97,17 @@
           </div>
         </details>
 
-        <button type="button" id="generate" class="primary">Generate</button>
+        <div class="generate-row">
+          <button type="button" id="generate" class="primary">Generate</button>
+          <button type="button" id="cancel-generate" class="secondary" hidden>Cancel</button>
+        </div>
         <p id="reuse-notice" class="reuse-notice" hidden></p>
         <p id="error" class="error" hidden></p>
       </section>
 
       <section class="result" id="result" hidden>
-        <img id="result-image" alt="Generated image" hidden />
+        <p id="result-progress" class="result-progress" hidden></p>
+        <div id="result-grid" class="result-grid"></div>
         <div id="meta" class="meta" hidden></div>
         <div id="actions" class="actions" hidden>
           <a id="open-image" href="#" target="_blank" rel="noopener">Open</a>
